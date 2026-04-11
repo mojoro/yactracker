@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Core entities
+// ---------------------------------------------------------------------------
+
+model Program {
+  id                   String   @id @default(uuid())
+  name                 String
+  description          String?
+  start_date           DateTime? @db.Date
+  end_date             DateTime? @db.Date
+  application_deadline DateTime? @db.Date
+  tuition              Float?
+  application_fee      Float?
+  age_min              Int?
+  age_max              Int?
+  offers_scholarship   Boolean  @default(false)
+  application_url      String?
+  program_url          String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  reviews              Review[]
+  auditions            Audition[]
+  program_instruments  ProgramInstrument[]
+  program_categories   ProgramCategory[]
+  program_locations    ProgramLocation[]
+
+  @@map("program")
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  program_id     String
+  rating         Int
+  year_attended  Int?
+  reviewer_name  String?
+  title          String?
+  body           String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  program        Program  @relation(fields: [program_id], references: [id])
+
+  @@map("review")
+}
+
+model Audition {
+  id               String   @id @default(uuid())
+  program_id       String
+  location_id      String
+  time_slot        DateTime?
+  audition_fee     Float?
+  instructions     String?
+  registration_url String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  program              Program              @relation(fields: [program_id], references: [id])
+  location             Location             @relation(fields: [location_id], references: [id])
+  audition_instruments AuditionInstrument[]
+
+  @@map("audition")
+}
+
+// ---------------------------------------------------------------------------
+// Reference data
+// ---------------------------------------------------------------------------
+
+model Instrument {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  program_instruments  ProgramInstrument[]
+  audition_instruments AuditionInstrument[]
+
+  @@map("instrument")
+}
+
+model Category {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  program_categories ProgramCategory[]
+
+  @@map("category")
+}
+
+model Location {
+  id         String   @id @default(uuid())
+  city       String
+  country    String
+  state      String?
+  address    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  auditions         Audition[]
+  program_locations ProgramLocation[]
+
+  @@map("location")
+}
+
+// ---------------------------------------------------------------------------
+// Join tables
+// ---------------------------------------------------------------------------
+
+model ProgramInstrument {
+  id            String     @id @default(uuid())
+  program_id    String
+  instrument_id String
+
+  program       Program    @relation(fields: [program_id], references: [id])
+  instrument    Instrument @relation(fields: [instrument_id], references: [id])
+
+  @@unique([program_id, instrument_id])
+  @@map("program_instrument")
+}
+
+model ProgramCategory {
+  id          String   @id @default(uuid())
+  program_id  String
+  category_id String
+
+  program     Program  @relation(fields: [program_id], references: [id])
+  category    Category @relation(fields: [category_id], references: [id])
+
+  @@unique([program_id, category_id])
+  @@map("program_category")
+}
+
+model ProgramLocation {
+  id          String   @id @default(uuid())
+  program_id  String
+  location_id String
+
+  program     Program  @relation(fields: [program_id], references: [id])
+  location    Location @relation(fields: [location_id], references: [id])
+
+  @@unique([program_id, location_id])
+  @@map("program_location")
+}
+
+model AuditionInstrument {
+  id            String     @id @default(uuid())
+  audition_id   String
+  instrument_id String
+
+  audition      Audition   @relation(fields: [audition_id], references: [id])
+  instrument    Instrument @relation(fields: [instrument_id], references: [id])
+
+  @@unique([audition_id, instrument_id])
+  @@map("audition_instrument")
+}
