@@ -1,0 +1,1125 @@
+openapi: 3.1.0
+info:
+  title: YACTracker API
+  description: |
+    REST API for YACTracker — a directory and review platform for Young Artist
+    Programs (YAPs) in classical music and opera.
+  version: 0.1.0
+  contact:
+    name: YACTracker Team
+  x-api-id: yactracker-api
+  x-audience: external-public
+
+servers:
+  - url: https://yactracker.app
+
+# ---------------------------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------------------------
+paths:
+
+  # ---- Programs -----------------------------------------------------------
+  /programs:
+    get:
+      summary: List and filter programs
+      description: |
+        Returns a paginated list of programs. Supports filtering by instrument,
+        category, location, and deadline status. Supports sorting via the `sort`
+        query parameter.
+      operationId: listPrograms
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: instrument_id
+          in: query
+          description: Filter by instrument UUID. Supports comma-separated values for OR semantics.
+          schema:
+            type: string
+        - name: category_id
+          in: query
+          description: Filter by category UUID. Supports comma-separated values for OR semantics.
+          schema:
+            type: string
+        - name: location_id
+          in: query
+          description: Filter by location UUID.
+          schema:
+            type: string
+        - name: country
+          in: query
+          description: Filter by country name (exact match).
+          schema:
+            type: string
+        - name: deadline_after
+          in: query
+          description: Return programs with application_deadline after this date (ISO 8601).
+          schema:
+            type: string
+            format: date
+        - name: deadline_before
+          in: query
+          description: Return programs with application_deadline before this date (ISO 8601).
+          schema:
+            type: string
+            format: date
+        - name: tuition_lower_than
+          in: query
+          description: Maximum tuition (inclusive upper bound).
+          schema:
+            type: number
+            format: float
+        - name: offers_scholarship
+          in: query
+          description: Filter to programs that offer scholarships.
+          schema:
+            type: boolean
+        - name: q
+          in: query
+          description: Free-text search across program name and description.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of programs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramListResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create a program
+      description: Creates a new program listing. Intended for admin or future authenticated use.
+      operationId: createProgram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramInput'
+      responses:
+        '201':
+          description: Program created successfully.
+          headers:
+            Location:
+              description: URL of the newly created program.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '400':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /programs/{program_id}:
+    get:
+      summary: Get a single program
+      operationId: getProgram
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: The requested program including computed average_rating.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    put:
+      summary: Update a program
+      description: Replaces the entire program resource.
+      operationId: updateProgram
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramInput'
+      responses:
+        '200':
+          description: Program updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---- Reviews (sub-resource of Program) ----------------------------------
+  /programs/{program_id}/reviews:
+    get:
+      summary: List reviews for a program
+      operationId: listProgramReviews
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: rating
+          in: query
+          description: Filter by exact rating (1-5).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: year_attended
+          in: query
+          description: Filter by the year the reviewer attended.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A paginated list of reviews for the program.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create a review for a program
+      operationId: createReview
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '201':
+          description: Review created successfully.
+          headers:
+            Location:
+              description: URL of the newly created review.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /programs/{program_id}/reviews/{review_id}:
+    get:
+      summary: Get a single review
+      operationId: getReview
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/ReviewId'
+      responses:
+        '200':
+          description: The requested review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    put:
+      summary: Update a review
+      operationId: updateReview
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/ReviewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '200':
+          description: Review updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---- Auditions (sub-resource of Program) --------------------------------
+  /programs/{program_id}/auditions:
+    get:
+      summary: List auditions for a program
+      operationId: listProgramAuditions
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: after
+          in: query
+          description: Return auditions with time_slot after this datetime.
+          schema:
+            type: string
+            format: date-time
+        - name: before
+          in: query
+          description: Return auditions with time_slot before this datetime.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: A paginated list of auditions for the program.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditionListResponse'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create an audition for a program
+      operationId: createAudition
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditionInput'
+      responses:
+        '201':
+          description: Audition created successfully.
+          headers:
+            Location:
+              description: URL of the newly created audition.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audition'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /programs/{program_id}/auditions/{audition_id}:
+    get:
+      summary: Get a single audition
+      operationId: getAudition
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/AuditionId'
+      responses:
+        '200':
+          description: The requested audition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audition'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    put:
+      summary: Update an audition
+      operationId: updateAudition
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/AuditionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditionInput'
+      responses:
+        '200':
+          description: Audition updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audition'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---- Reference data ------------------------------------------------------
+  /instruments:
+    get:
+      summary: List all instruments
+      operationId: listInstruments
+      responses:
+        '200':
+          description: List of all instruments.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Instrument'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create an instrument
+      operationId: createInstrument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceDataInput'
+      responses:
+        '201':
+          description: Instrument created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '400':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /instruments/{instrument_id}:
+    put:
+      summary: Update an instrument
+      operationId: updateInstrument
+      parameters:
+        - name: instrument_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceDataInput'
+      responses:
+        '200':
+          description: Instrument updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /categories:
+    get:
+      summary: List all categories
+      operationId: listCategories
+      responses:
+        '200':
+          description: List of all categories.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create a category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceDataInput'
+      responses:
+        '201':
+          description: Category created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /categories/{category_id}:
+    put:
+      summary: Update a category
+      operationId: updateCategory
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceDataInput'
+      responses:
+        '200':
+          description: Category updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /locations:
+    get:
+      summary: List all locations
+      operationId: listLocations
+      parameters:
+        - name: country
+          in: query
+          description: Filter locations by country.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of all locations.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        default:
+          $ref: '#/components/responses/Problem'
+
+    post:
+      summary: Create a location
+      operationId: createLocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationInput'
+      responses:
+        '201':
+          description: Location created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /locations/{location_id}:
+    put:
+      summary: Update a location
+      operationId: updateLocation
+      parameters:
+        - name: location_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationInput'
+      responses:
+        '200':
+          description: Location updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+# ---------------------------------------------------------------------------
+# COMPONENTS
+# ---------------------------------------------------------------------------
+components:
+
+  # ---- Reusable parameters ------------------------------------------------
+  parameters:
+    ProgramId:
+      name: program_id
+      in: path
+      required: true
+      description: UUID of the program.
+      schema:
+        type: string
+        format: uuid
+
+    ReviewId:
+      name: review_id
+      in: path
+      required: true
+      description: UUID of the review.
+      schema:
+        type: string
+        format: uuid
+
+    AuditionId:
+      name: audition_id
+      in: path
+      required: true
+      description: UUID of the audition.
+      schema:
+        type: string
+        format: uuid
+
+    PageNumber:
+      name: page[number]
+      in: query
+      description: Page number (zero-indexed).
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+
+    PageSize:
+      name: page[size]
+      in: query
+      description: Number of items per page.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    Sort:
+      name: sort
+      in: query
+      description: |
+        Comma-separated list of fields to sort by. Prefix with `-` for
+        descending order. Example: `-created_at,name`
+      schema:
+        type: string
+
+  # ---- Reusable responses -------------------------------------------------
+  responses:
+    Problem:
+      description: An error occurred — see status code and problem object for details.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  # ---- Schemas ------------------------------------------------------------
+  schemas:
+
+    # -- Problem (RFC 9457) --
+    Problem:
+      type: object
+      description: Problem detail object per RFC 9457.
+      properties:
+        type:
+          type: string
+          description: A relative URI reference identifying the problem type.
+          examples:
+            - /problems/not-found
+        title:
+          type: string
+          description: A short human-readable summary of the problem.
+          examples:
+            - Resource not found
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code.
+          examples:
+            - 404
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+          examples:
+            - Program with id '550e8400-e29b-41d4-a716-446655440000' not found.
+        instance:
+          type: string
+          description: A URI reference identifying this specific occurrence.
+
+    # -- Pagination --
+    PaginationMeta:
+      type: object
+      properties:
+        page_number:
+          type: integer
+          format: int32
+        page_size:
+          type: integer
+          format: int32
+        total_pages:
+          type: integer
+          format: int32
+        total_items:
+          type: integer
+          format: int32
+
+    # -- Program --
+    Program:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          examples:
+            - Salzburg Festival Young Singers Project
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        application_deadline:
+          type: string
+          format: date
+        tuition:
+          type: number
+          format: float
+          examples:
+            - 2500.00
+        application_fee:
+          type: number
+          format: float
+          examples:
+            - 75.00
+        age_min:
+          type: integer
+          format: int32
+        age_max:
+          type: integer
+          format: int32
+        offers_scholarship:
+          type: boolean
+          default: false
+        application_url:
+          type: string
+          format: uri
+        program_url:
+          type: string
+          format: uri
+        average_rating:
+          type: number
+          format: float
+          readOnly: true
+          description: Computed average of all review ratings (1.0–5.0).
+        review_count:
+          type: integer
+          format: int32
+          readOnly: true
+        instruments:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Instrument'
+        categories:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Category'
+        locations:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Location'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ProgramInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        application_deadline:
+          type: string
+          format: date
+        tuition:
+          type: number
+          format: float
+        application_fee:
+          type: number
+          format: float
+        age_min:
+          type: integer
+          format: int32
+        age_max:
+          type: integer
+          format: int32
+        offers_scholarship:
+          type: boolean
+        application_url:
+          type: string
+          format: uri
+        program_url:
+          type: string
+          format: uri
+        instrument_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        location_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    ProgramListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Program'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # -- Review --
+    Review:
+      type: object
+      required:
+        - id
+        - program_id
+        - rating
+        - body
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        program_id:
+          type: string
+          format: uuid
+          readOnly: true
+        rating:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+        year_attended:
+          type: integer
+          format: int32
+          examples:
+            - 2025
+        reviewer_name:
+          type: string
+          description: Display name of the reviewer (anonymous if omitted).
+          examples:
+            - Soprano2025
+        title:
+          type: string
+          examples:
+            - Transformative experience
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ReviewInput:
+      type: object
+      required:
+        - rating
+        - body
+      properties:
+        rating:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+        year_attended:
+          type: integer
+          format: int32
+        reviewer_name:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+
+    ReviewListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # -- Audition --
+    Audition:
+      type: object
+      required:
+        - id
+        - program_id
+        - location_id
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        program_id:
+          type: string
+          format: uuid
+          readOnly: true
+        location_id:
+          type: string
+          format: uuid
+        location:
+          $ref: '#/components/schemas/Location'
+          readOnly: true
+        time_slot:
+          type: string
+          format: date-time
+        audition_fee:
+          type: number
+          format: float
+        instructions:
+          type: string
+        registration_url:
+          type: string
+          format: uri
+        instruments:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Instrument'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    AuditionListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audition'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    AuditionInput:
+      type: object
+      required:
+        - location_id
+      properties:
+        location_id:
+          type: string
+          format: uuid
+        time_slot:
+          type: string
+          format: date-time
+        audition_fee:
+          type: number
+          format: float
+        instructions:
+          type: string
+        registration_url:
+          type: string
+          format: uri
+        instrument_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    # -- Reference data input --
+    ReferenceDataInput:
+      type: object
+      description: Input for creating or updating an instrument or category.
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    LocationInput:
+      type: object
+      required:
+        - city
+        - country
+      properties:
+        city:
+          type: string
+        country:
+          type: string
+        state:
+          type: string
+        address:
+          type: string
+
+    # -- Reference data --
+    Instrument:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples:
+            - violin
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples:
+            - opera
+
+    Location:
+      type: object
+      required:
+        - id
+        - city
+        - country
+      properties:
+        id:
+          type: string
+          format: uuid
+        city:
+          type: string
+          examples:
+            - Salzburg
+        country:
+          type: string
+          examples:
+            - Austria
+        state:
+          type: string
+        address:
+          type: string
