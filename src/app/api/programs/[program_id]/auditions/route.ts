@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, context: RouteContext): Promise<
       where.time_slot = timeSlotFilter
     }
 
-    const [items, totalItems] = await prisma.$transaction([
+    const [items, totalItems] = await Promise.all([
       prisma.audition.findMany({
         where,
         orderBy: [{ time_slot: 'asc' }, { created_at: 'asc' }],

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, context: RouteContext): Promise<
       { created_at: 'desc' },
     )
 
-    const [items, totalItems] = await prisma.$transaction([
+    const [items, totalItems] = await Promise.all([
       prisma.review.findMany({
         where,
         orderBy,

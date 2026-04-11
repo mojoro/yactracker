@@ -176,7 +176,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       where.AND = andFilters
     }
 
-    const [programs, totalItems] = await prisma.$transaction([
+    const [programs, totalItems] = await Promise.all([
       prisma.program.findMany({
         where,
         orderBy,
