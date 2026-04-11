@@ -174,6 +174,24 @@ Three pages, server-rendered where possible:
 - Semantic HTML.
 - Accessible: labels, contrast, focus states.
 
+## Tailwind v4 rules (IMPORTANT)
+
+Project uses Tailwind CSS v4 via `@tailwindcss/postcss`. Different from v3.
+
+- **Only** `@import "tailwindcss"` in `src/app/globals.css`. No `@tailwind base/components/utilities` directives — those are v3.
+- v4 cascade layers: `theme, base, components, utilities`. Unlayered CSS **beats** utilities — never write raw `body { background: ... }` or `h1 { color: ... }` in globals.css. Either use Tailwind utilities on the element, or wrap overrides in `@layer base { ... }` so utilities still win.
+- Do **not** add `@media (prefers-color-scheme: dark)` blocks that set colors on `:root`/`body`. This silently flips the whole POC to dark mode on dark-OS users and defeats `bg-white`/`text-gray-900` utilities. For dark mode use Tailwind's `dark:` variants explicitly.
+- Design tokens go in `@theme inline { ... }`. Example:
+  ```css
+  @theme inline {
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+  }
+  ```
+- Fonts: `next/font` injects `--font-geist-sans` on `<html>`. `@theme inline` maps it to Tailwind's `--font-sans`, so `font-sans` utility picks it up automatically. Never write raw `font-family: Arial` in globals.css — it overrides Geist.
+- POC palette is **light**: `bg-white`, `text-gray-900`, `border-gray-200`. Do not introduce dark variants until the design phase.
+- Arbitrary values (`bg-[#123]`) are fine but prefer the default palette for consistency.
+
 ## Build steps (in order)
 
 1. `npx create-next-app@latest yactracker --typescript --tailwind --app --src-dir`
