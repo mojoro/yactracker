@@ -1,5 +1,7 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { isAdminAuthenticated, adminLogout } from '../actions'
 import { approveCandidate, rejectCandidate } from './actions'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
@@ -14,6 +16,8 @@ export default async function AdminImportPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
+  if (!(await isAdminAuthenticated())) redirect('/admin')
+
   const params = await searchParams
   const statusFilter = getString(params, 'status') ?? 'pending'
 
@@ -49,12 +53,22 @@ export default async function AdminImportPage({
           <h1 className="text-2xl font-semibold text-gray-900">
             Import review
           </h1>
-          <Link
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900 underline"
-          >
-            Back to site
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="text-sm text-gray-600 hover:text-gray-900 underline"
+            >
+              Back to site
+            </Link>
+            <form action={adminLogout}>
+              <button
+                type="submit"
+                className="text-sm text-gray-500 hover:text-gray-900 underline"
+              >
+                Logout
+              </button>
+            </form>
+          </div>
         </div>
         <p className="mt-1 text-sm text-gray-600">
           Review extracted program candidates before they go live.
