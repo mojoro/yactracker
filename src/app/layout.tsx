@@ -19,6 +19,21 @@ export const metadata: Metadata = {
   title: 'Young Artist Community | Classical Music Programs Directory',
   description:
     'Find and review young artist programs in classical music and opera. A community resource for singers and instrumentalists.',
+  metadataBase: new URL('https://youngartist.community'),
+  openGraph: {
+    type: 'website',
+    siteName: 'Young Artist Community',
+    title: 'Young Artist Community',
+    description:
+      'Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.',
+    url: 'https://youngartist.community',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Young Artist Community',
+    description:
+      'Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.',
+  },
 }
 
 export default function RootLayout({
