@@ -2,15 +2,16 @@
 
 ## What this is
 
-YACTracker = directory + review platform for Young Artist Programs (YAPs) in classical music/opera. Users browse/filter programs, submit reviews. No auth v1.
+YACTracker — a Young Artist Community directory + review platform for Young Artist Programs (YAPs) in classical music/opera. Users browse/filter programs, submit reviews. Admin panel for data management + automated import pipeline.
 
 ## Stack
 
-- Next.js 16 (App Router)
+- Next.js 16 (App Router, Server Components)
 - TypeScript (strict mode)
-- Prisma ORM
+- Prisma 7 ORM + Neon serverless adapter
 - Neon Postgres (connection string in `DATABASE_URL` env var)
-- Tailwind CSS
+- Tailwind CSS v4
+- OpenRouter (Claude Haiku 4.5) for LLM extraction
 - Deploy to Vercel
 
 ## Project structure
@@ -18,47 +19,66 @@ YACTracker = directory + review platform for Young Artist Programs (YAPs) in cla
 ```
 yactracker/
 ├── prisma/
-│   ├── schema.prisma        # provided — do not modify without asking
-│   └── seed.ts              # seed script for reference data + sample programs
+│   ├── schema.prisma          # do not modify without asking
+│   ├── prisma.config.ts       # Prisma 7 config w/ NeonAdapter
+│   └── seed.ts                # seed script: reference data, programs, import sources
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                          # landing — featured programs, search entry
+│   │   ├── layout.tsx         # root layout w/ header nav, footer
+│   │   ├── page.tsx           # landing — featured programs, search, category chips
 │   │   ├── programs/
-│   │   │   ├── page.tsx                      # browsable/filterable program directory
+│   │   │   ├── page.tsx       # browsable/filterable program directory
 │   │   │   └── [program_id]/
-│   │   │       └── page.tsx                  # program detail + reviews list + review form
-│   │   └── api/
-│   │       ├── programs/
-│   │       │   ├── route.ts                  # GET (list/filter), POST (create)
+│   │   │       ├── page.tsx   # program detail + reviews + review form
+│   │   │       └── actions.ts # submitReview server action
+│   │   ├── admin/
+│   │   │   ├── page.tsx       # admin login (ADMIN_TOKEN gate)
+│   │   │   ├── actions.ts     # login/logout/isAdminAuthenticated
+│   │   │   ├── import/
+│   │   │   │   ├── page.tsx   # import review: candidates, sources, scrape
+│   │   │   │   ├── actions.ts # approve/reject/addSource/reExtract/runScrape
+│   │   │   │   ├── scrape-button.tsx
+│   │   │   │   ├── re-extract-button.tsx
+│   │   │   │   ├── add-source-form.tsx
+│   │   │   │   └── candidate-editor.tsx
+│   │   │   └── data/
+│   │   │       ├── page.tsx   # program/review/audition CRUD
+│   │   │       ├── actions.ts # updateProgram/deleteProgram/deleteReview/audition CRUD
+│   │   │       ├── program-editor.tsx
+│   │   │       ├── audition-form.tsx
+│   │   │       └── delete-button.tsx
+│   │   └── api/               # REST API (Zalando-aligned, RFC 9457 errors)
+│   │       ├── programs/      # GET list/filter, POST create
 │   │       │   └── [program_id]/
-│   │       │       ├── route.ts              # GET (single), PUT (update)
-│   │       │       ├── reviews/
-│   │       │       │   ├── route.ts          # GET (list), POST (create)
-│   │       │       │   └── [review_id]/
-│   │       │       │       └── route.ts      # GET (single), PUT (update)
-│   │       │       └── auditions/
-│   │       │           ├── route.ts          # GET (list), POST (create)
-│   │       │           └── [audition_id]/
-│   │       │               └── route.ts      # GET (single), PUT (update)
-│   │       ├── instruments/
-│   │       │   ├── route.ts                  # GET (list), POST (create)
-│   │       │   └── [instrument_id]/
-│   │       │       └── route.ts              # PUT (update)
-│   │       ├── categories/
-│   │       │   ├── route.ts                  # GET (list), POST (create)
-│   │       │   └── [category_id]/
-│   │       │       └── route.ts              # PUT (update)
-│   │       └── locations/
-│   │           ├── route.ts                  # GET (list), POST (create)
-│   │           └── [location_id]/
-│   │               └── route.ts              # PUT (update)
+│   │       │       ├── route.ts          # GET single, PUT update
+│   │       │       ├── reviews/route.ts  # GET list, POST create
+│   │       │       │   └── [review_id]/route.ts
+│   │       │       └── auditions/route.ts
+│   │       │           └── [audition_id]/route.ts
+│   │       ├── instruments/   # GET list, POST create, PUT update
+│   │       ├── categories/    # GET list, POST create, PUT update
+│   │       ├── locations/     # GET list, POST create, PUT update
+│   │       └── import/run/    # POST trigger scrape (CRON_SECRET gated)
 │   └── lib/
-│       ├── prisma.ts                         # singleton Prisma client
-│       └── problem.ts                        # RFC 9457 problem JSON helper
-├── yactracker-api.yaml                       # OpenAPI 3.1 spec — source of truth for all endpoints
+│       ├── prisma.ts          # singleton Prisma client w/ NeonAdapter
+│       ├── problem.ts         # RFC 9457 problem+json helpers
+│       ├── pagination.ts      # cursor-based pagination (opaque base64url tokens)
+│       ├── sort.ts            # sort param parsing + Prisma orderBy
+│       ├── types.ts           # shared TypeScript types
+│       ├── api.ts             # typed fetch helpers (used by server actions only)
+│       └── import/
+│           ├── constants.ts   # USER_AGENT, throttle timings
+│           ├── robots.ts      # robots.txt checker
+│           ├── throttle.ts    # per-host rate limiter
+│           ├── fetcher.ts     # HTML fetcher w/ hash diffing
+│           ├── extractor.ts   # OpenRouter LLM extractor w/ Zod validation
+│           ├── candidate.ts   # dedupe matching + ProgramCandidate creation
+│           ├── upsert.ts      # approve → upsert Program from extracted JSON
+│           └── run.ts         # orchestrator: fetch → extract → candidate
+├── openapi.yaml               # OpenAPI 3.0.3 spec (Zally-linted)
+├── vercel.json                # Vercel cron: monthly import run
 ├── CLAUDE.md
-└── .env.local                                # DATABASE_URL=<neon connection string>
+└── .env.local                 # DATABASE_URL, ADMIN_TOKEN, OPENROUTER_API_KEY
 ```
 
 ## Database schema
@@ -71,9 +91,9 @@ Prisma schema at `prisma/schema.prisma`. Models:
 - `Audition` — belongs to one Program (FK `program_id`) + one Location (FK `location_id`). Fields: time_slot, fee, instructions, registration URL.
 
 **Reference data:**
-- `Instrument` — unique name. Filter dropdowns.
-- `Category` — unique name. Filter dropdowns.
-- `Location` — city, country, state, address.
+- `Instrument` — unique name. Filter dropdowns. Validated on write — never auto-create from user input.
+- `Category` — unique name. Filter dropdowns. Validated on write.
+- `Location` — city, country, state, address. Matched case-insensitively on city+country.
 
 **Join tables (all @@unique on FK pair):**
 - `ProgramInstrument` — Program ↔ Instrument (M:N)
@@ -81,139 +101,73 @@ Prisma schema at `prisma/schema.prisma`. Models:
 - `ProgramLocation` — Program ↔ Location (M:N)
 - `AuditionInstrument` — Audition ↔ Instrument (M:N)
 
+**Import pipeline:**
+- `ImportSource` — URL to scrape, links to optional Program. Has status (active/paused/broken).
+- `ImportRun` — one fetch attempt. Stores gzipped HTML, hash, extraction model/tokens, result.
+- `ProgramCandidate` — extracted program data awaiting human approval. Status: pending/approved/rejected/stale.
+
 ## API design rules
 
-Follows Zalando RESTful API Guidelines. Rules per handler:
+Follows Zalando RESTful API Guidelines (pragmatically — see memory).
 
-1. **snake_case** all JSON props + query params. Never camelCase.
-2. **Plural resource names** in URLs: `/programs`, `/reviews`, `/instruments`.
-3. **Sub-resources** for owned entities: `/programs/{program_id}/reviews`, `/programs/{program_id}/auditions`.
-4. **All errors** return `application/problem+json` per RFC 9457:
-   ```json
-   {
-     "type": "/problems/not-found",
-     "title": "Resource not found",
-     "status": 404,
-     "detail": "Program with id 'xxx' not found."
-   }
-   ```
+1. **snake_case** all JSON props + query params.
+2. **Plural resource names** in URLs.
+3. **Sub-resources** for owned entities.
+4. **All errors** return `application/problem+json` per RFC 9457.
 5. **POST** → 201 + created resource + `Location` header.
-6. **PUT** → 200 + updated resource.
-7. **GET** collections → `{ "items": [...], "meta": { "page_number", "page_size", "total_pages", "total_items" } }`.
-8. **Pagination** via `page[number]` (default 0) + `page[size]` (default 20, max 100).
-9. **Sorting** via `sort` query param. Comma-separated, `-` prefix = desc. Example: `sort=-created_at,name`.
-10. **No auth** v1. All endpoints public.
+6. **PUT** → 200 + updated resource. P2002 → 409 conflict.
+7. **GET** collections → `{ "items": [...], "meta": { "next", "prev", "total_items" } }`.
+8. **Cursor pagination** — opaque base64url tokens encoding `{offset}`. `cursor` + `limit` params.
+9. **Sorting** via `sort` query param. Comma-separated, `-` prefix = desc.
+10. **Validation errors** → 400 (not 422, per Zalando).
+11. **No auth** on public API. Admin pages gated by `ADMIN_TOKEN` cookie.
 
-## API endpoints
+## Data fetching pattern
 
-Full OpenAPI 3.1 spec in `yactracker-api.yaml`. Implement every endpoint. Filtering on `GET /programs`:
+**Server components query Prisma directly.** Do NOT use `apiFetch`/HTTP self-fetch from server components — it causes unnecessary round-trips and 401 errors on Vercel deployment-protected URLs. The `src/lib/api.ts` helpers exist only for server actions that POST to API routes.
 
-- `instrument_id` — filter by instrument UUID (comma-separated = OR)
-- `category_id` — filter by category UUID (comma-separated = OR)
-- `location_id` — filter by location UUID
-- `country` — filter by country name
-- `deadline_after` / `deadline_before` — date range on application_deadline
-- `tuition_lower_than` — upper bound on tuition
-- `offers_scholarship` — boolean filter
-- `q` — free-text search on name + description
+## Admin pages
 
-## Seed data
+All admin pages gated by `ADMIN_TOKEN` env var (cookie-based, set via `/admin` login form).
 
-Create `prisma/seed.ts` populating:
+- `/admin` — login page
+- `/admin/import` — import pipeline: candidate review (approve/reject/edit), source management (add/list/re-extract), scrape trigger
+- `/admin/data` — program CRUD (edit all fields), review delete, audition CRUD (create/edit/delete)
 
-**Instruments** (min): Voice, Violin, Viola, Cello, Double Bass, Flute, Oboe, Clarinet, Bassoon, French Horn, Trumpet, Trombone, Tuba, Piano, Harp, Percussion, Composition, Conducting
+Reference data (instruments, categories, locations) is **validated, not auto-created** on the admin pages. Unknown values are rejected with an error listing valid options.
 
-**Categories** (min): Opera, Orchestral, Chamber Music, Art Song / Lieder, Musical Theatre, Baroque, Contemporary, Choral
+## Import pipeline
 
-**Locations** — 8-10 real YAP cities: Salzburg (Austria), Aspen (Colorado, US), Tanglewood (Massachusetts, US), Santa Fe (New Mexico, US), Glyndebourne (England, UK), Aix-en-Provence (France), Spoleto (Italy), Banff (Alberta, Canada), Ravinia (Illinois, US), Brevard (North Carolina, US)
+Flow: `ImportSource` → fetch HTML → hash diff → LLM extract (OpenRouter, Claude Haiku 4.5) → `ProgramCandidate` → human review → approve → upsert `Program`.
 
-**Programs** — 10-15 real/realistic YAPs, plausible data. Link to instruments, categories, locations via join tables.
+- Fetch respects robots.txt, 5s per-host throttle
+- Hash comparison skips extraction when content unchanged
+- Re-extract button runs extraction on stored HTML without re-fetching
+- Approve resolves instrument/category/location names to existing IDs (skips unknown)
+- Monthly Vercel cron triggers `POST /api/import/run` (gated by `CRON_SECRET`)
 
-**Reviews** — 2-4 per program, varied ratings + years.
+## Environment variables
 
-**Auditions** — 2-3 per program, different locations.
-
-Configure seed in `package.json`:
-```json
-{
-  "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
-  }
-}
-```
-
-## Frontend pages
-
-Three pages, server-rendered where possible:
-
-### 1. Landing page (`/`)
-- Hero + tagline: "Find and review young artist programs in classical music and opera"
-- Search bar → `/programs?q=<query>`
-- Featured programs (nearest deadlines or top rated)
-- Quick filter chips for common categories
-
-### 2. Program directory (`/programs`)
-- Filter sidebar/top bar: instrument, category, country, scholarship, tuition range dropdowns
-- Program cards grid: name, location(s), category badges, tuition, deadline, avg rating, review count
-- Pagination controls
-- Sort dropdown (deadline, rating, tuition, name)
-
-### 3. Program detail (`/programs/[program_id]`)
-- Full info: description, dates, tuition, age range, scholarship, links
-- Instrument + category tags
-- Locations list
-- Auditions: dates, locations, fees, registration links
-- Reviews: avg rating summary + individual cards
-- Review form (reviewer_name, rating 1-5 stars, year_attended, title, body)
-
-## UI guidelines
-
-- Clean, professional. Not flashy. Glassdoor/Yelp, not Dribbble.
-- Tailwind only — no component library.
-- Responsive: mobile + desktop.
-- Semantic HTML.
-- Accessible: labels, contrast, focus states.
+- `DATABASE_URL` — Neon pooled connection string
+- `ADMIN_TOKEN` — shared secret for admin login
+- `OPENROUTER_API_KEY` — for LLM extraction
+- `CRON_SECRET` — Vercel cron auth (auto-sent as Bearer token)
 
 ## Tailwind v4 rules (IMPORTANT)
 
-Project uses Tailwind CSS v4 via `@tailwindcss/postcss`. Different from v3.
-
-- **Only** `@import "tailwindcss"` in `src/app/globals.css`. No `@tailwind base/components/utilities` directives — those are v3.
-- v4 cascade layers: `theme, base, components, utilities`. Unlayered CSS **beats** utilities — never write raw `body { background: ... }` or `h1 { color: ... }` in globals.css. Either use Tailwind utilities on the element, or wrap overrides in `@layer base { ... }` so utilities still win.
-- Do **not** add `@media (prefers-color-scheme: dark)` blocks that set colors on `:root`/`body`. This silently flips the whole POC to dark mode on dark-OS users and defeats `bg-white`/`text-gray-900` utilities. For dark mode use Tailwind's `dark:` variants explicitly.
-- Design tokens go in `@theme inline { ... }`. Example:
-  ```css
-  @theme inline {
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
-  }
-  ```
-- Fonts: `next/font` injects `--font-geist-sans` on `<html>`. `@theme inline` maps it to Tailwind's `--font-sans`, so `font-sans` utility picks it up automatically. Never write raw `font-family: Arial` in globals.css — it overrides Geist.
-- POC palette is **light**: `bg-white`, `text-gray-900`, `border-gray-200`. Do not introduce dark variants until the design phase.
-- Arbitrary values (`bg-[#123]`) are fine but prefer the default palette for consistency.
-
-## Build steps (in order)
-
-1. `npx create-next-app@latest yactracker --typescript --tailwind --app --src-dir`
-2. Copy `schema.prisma` to `prisma/schema.prisma`
-3. `npm install prisma @prisma/client`
-4. `npx prisma generate`
-5. `npx prisma db push` (creates tables in Neon)
-6. Create `src/lib/prisma.ts` (singleton client)
-7. Create `src/lib/problem.ts` (error response helper)
-8. Implement all API route handlers per OpenAPI spec
-9. Create seed script, run `npx prisma db seed`
-10. Build three frontend pages
-11. Test: filtering, pagination, review submission, error responses
-12. `npm run build` — no build errors
-13. Deploy to Vercel
+- **Only** `@import "tailwindcss"` in `src/app/globals.css`. No `@tailwind` directives (v3).
+- Unlayered CSS **beats** utilities — wrap overrides in `@layer base { ... }`.
+- No `prefers-color-scheme: dark` blocks. POC palette is light.
+- Design tokens in `@theme inline { ... }`.
+- Never write raw `font-family` in globals.css — Geist loaded via `next/font`.
 
 ## Important constraints
 
-- No auth/authz v1.
-- No DELETE v1.
+- No public auth/authz. Admin uses `ADMIN_TOKEN`.
 - No PATCH — PUT for all updates.
-- Every collection response wrapped in `{ "items": [...] }` — never bare array top-level.
+- Every collection response wrapped in `{ "items": [...] }`.
 - UUIDs for all primary keys.
-- Timestamps UTC, format `date-time` per RFC 3339.
-- OpenAPI spec (`yactracker-api.yaml`) = source of truth for request/response shapes. Match exactly.
+- Timestamps UTC, RFC 3339.
+- `prisma/` excluded from tsconfig (seed.ts uses standalone PrismaClient).
+- Build command: `prisma generate && next build` (generates client before type-check).
+- OpenAPI spec (`openapi.yaml`) = source of truth for API request/response shapes.
