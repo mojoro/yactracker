@@ -14,11 +14,14 @@ interface ComboboxProps {
   options: { id: string; name: string }[]
   placeholder?: string
   required?: boolean
+  initialSelected?: { id: string; name: string }[]
 }
 
-export function Combobox({ name, label, options, placeholder, required }: ComboboxProps) {
+export function Combobox({ name, label, options, placeholder, required, initialSelected }: ComboboxProps) {
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<ComboboxItem[]>([])
+  const [selected, setSelected] = useState<ComboboxItem[]>(
+    () => initialSelected?.map((item) => ({ id: item.id, name: item.name, is_new: false })) ?? [],
+  )
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -168,6 +171,7 @@ interface LocationComboboxProps {
   options: { id: string; name: string }[]
   placeholder?: string
   required?: boolean
+  initialSelected?: { id: string; name: string }[]
 }
 
 interface LocationNewForm {
@@ -181,9 +185,12 @@ export function LocationCombobox({
   options,
   placeholder,
   required,
+  initialSelected,
 }: LocationComboboxProps) {
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<ComboboxItem[]>([])
+  const [selected, setSelected] = useState<ComboboxItem[]>(
+    () => initialSelected?.map((item) => ({ id: item.id, name: item.name, is_new: false })) ?? [],
+  )
   const [open, setOpen] = useState(false)
   const [addingNew, setAddingNew] = useState(false)
   const [newLoc, setNewLoc] = useState<LocationNewForm>({ city: '', country: '' })
