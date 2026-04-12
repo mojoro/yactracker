@@ -19,6 +19,16 @@ if (!connectionString) {
 const adapter = new PrismaNeon({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 // ---------------------------------------------------------------------------
 // Reference data constants
 // ---------------------------------------------------------------------------
@@ -73,10 +83,11 @@ const LOC_TANGLEWOOD = '00000000-0000-0000-0000-000000000003'
 const LOC_SANTA_FE = '00000000-0000-0000-0000-000000000004'
 const LOC_GLYNDEBOURNE = '00000000-0000-0000-0000-000000000005'
 const LOC_AIX = '00000000-0000-0000-0000-000000000006'
-const LOC_SPOLETO = '00000000-0000-0000-0000-000000000007'
 const LOC_BANFF = '00000000-0000-0000-0000-000000000008'
 const LOC_RAVINIA = '00000000-0000-0000-0000-000000000009'
 const LOC_BREVARD = '00000000-0000-0000-0000-000000000010'
+const LOC_SAN_FRANCISCO = '00000000-0000-0000-0000-000000000011'
+const LOC_GRAZ = '00000000-0000-0000-0000-000000000012'
 
 const LOCATIONS: LocationSeed[] = [
   {
@@ -109,10 +120,10 @@ const LOCATIONS: LocationSeed[] = [
   },
   {
     id: LOC_GLYNDEBOURNE,
-    city: 'Glyndebourne',
+    city: 'Lewes',
     country: 'United Kingdom',
     state: 'England',
-    address: 'New Rd, Lewes BN8 5UU',
+    address: 'New Rd, Glyndebourne, Lewes BN8 5UU',
   },
   {
     id: LOC_AIX,
@@ -120,13 +131,6 @@ const LOCATIONS: LocationSeed[] = [
     country: 'France',
     state: null,
     address: "Palais de l'Ancien Archevêché, 13100 Aix-en-Provence",
-  },
-  {
-    id: LOC_SPOLETO,
-    city: 'Spoleto',
-    country: 'Italy',
-    state: null,
-    address: 'Piazza del Duomo, 06049 Spoleto PG',
   },
   {
     id: LOC_BANFF,
@@ -147,7 +151,21 @@ const LOCATIONS: LocationSeed[] = [
     city: 'Brevard',
     country: 'United States',
     state: 'North Carolina',
-    address: '349 Andante Ln, Brevard, NC 28712',
+    address: '365 Andante Ln, Brevard, NC 28712',
+  },
+  {
+    id: LOC_SAN_FRANCISCO,
+    city: 'San Francisco',
+    country: 'United States',
+    state: 'California',
+    address: '301 Van Ness Ave, San Francisco, CA 94102',
+  },
+  {
+    id: LOC_GRAZ,
+    city: 'Graz',
+    country: 'Austria',
+    state: null,
+    address: 'Leonhardstraße 15, 8010 Graz',
   },
 ]
 
@@ -194,20 +212,24 @@ type ProgramSeed = {
 }
 
 const PROGRAMS: ProgramSeed[] = [
+  // -------------------------------------------------------------------------
+  // 1. Salzburg Festival Young Singers Project
+  // Source: salzburgerfestspiele.at, creativefellowship.org
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000001',
     name: 'Salzburg Festival Young Singers Project',
     description:
-      'An intensive summer residency for emerging opera singers at one of the world\'s most prestigious festivals. Participants work with leading coaches, conductors, and directors while preparing chamber concerts and masterclasses. Full stipend and housing provided.',
-    start_date: new Date('2026-07-20'),
-    end_date: new Date('2026-08-30'),
-    application_deadline: new Date('2026-01-15'),
+      'An intensive vocal training program held during the Salzburg Festival. Participants receive masterclasses in song interpretation, language coaching, and repertoire work alongside Festival artists. The residency culminates in a final concert with the Mozarteum Orchestra Salzburg. All participants receive a full scholarship including an honorarium, travel allowance, and accommodation, funded by the Kühne Foundation. Approximately 14-15 singers are selected from around 800 applicants.',
+    start_date: new Date('2026-07-17'),
+    end_date: new Date('2026-08-09'),
+    application_deadline: new Date('2025-09-30'),
     tuition: 0,
-    application_fee: 75,
-    age_min: 22,
-    age_max: 32,
+    application_fee: null,
+    age_min: null,
+    age_max: 30,
     offers_scholarship: true,
-    application_url: 'https://www.salzburgerfestspiele.at/en/young-singers-project/apply',
+    application_url: 'https://www.salzburgerfestspiele.at/en/young-singers-project',
     program_url: 'https://www.salzburgerfestspiele.at/en/young-singers-project',
     instrument_names: ['Voice'],
     category_names: ['Opera', 'Art Song / Lieder'],
@@ -239,38 +261,36 @@ const PROGRAMS: ProgramSeed[] = [
       {
         location_id: LOC_SALZBURG,
         time_slot: new Date('2025-11-12T10:00:00Z'),
-        audition_fee: 50,
+        audition_fee: null,
         instructions:
           'Prepare five contrasting arias in at least three languages. One aria will be chosen from your list.',
-        registration_url: 'https://www.salzburgerfestspiele.at/en/ysp/auditions',
-        instrument_names: ['Voice'],
-      },
-      {
-        location_id: LOC_GLYNDEBOURNE,
-        time_slot: new Date('2025-12-03T11:00:00Z'),
-        audition_fee: 50,
-        instructions: 'Same repertoire requirements as Salzburg auditions. Accompanist provided.',
-        registration_url: 'https://www.salzburgerfestspiele.at/en/ysp/auditions',
+        registration_url: 'https://www.salzburgerfestspiele.at/en/young-singers-project',
         instrument_names: ['Voice'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 2. Aspen Music Festival and School
+  // Source: aspenmusicfestival.com (programs, fees, costs, fellowships)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000002',
     name: 'Aspen Music Festival and School',
     description:
-      'A nine-week summer festival in the Rocky Mountains combining orchestral, chamber, and contemporary music training. Fellows perform alongside renowned faculty and guest artists across multiple ensembles. Robust scholarship support available.',
-    start_date: new Date('2026-06-25'),
+      'A premier summer festival and school in the Rocky Mountains, founded in 1949. Nearly 500 young musicians study and perform in four orchestras, opera productions, chamber music, and solo repertoire alongside world-class faculty. Over 400 events each summer. The school provides over $3 million in financial assistance annually, and all applicants are automatically considered for fellowship awards covering tuition, room, and board.',
+    start_date: new Date('2026-06-24'),
     end_date: new Date('2026-08-23'),
-    application_deadline: new Date('2026-02-01'),
-    tuition: 6500,
-    application_fee: 110,
-    age_min: 17,
-    age_max: 30,
+    application_deadline: new Date('2025-12-15'),
+    tuition: 6275,
+    application_fee: 60,
+    age_min: null,
+    age_max: null,
     offers_scholarship: true,
-    application_url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/application-portal/',
+    application_url: 'https://students.aspenmusicfestival.com/apply/',
     program_url: 'https://www.aspenmusicfestival.com',
     instrument_names: [
+      'Voice',
       'Violin',
       'Viola',
       'Cello',
@@ -289,14 +309,14 @@ const PROGRAMS: ProgramSeed[] = [
       'Composition',
       'Conducting',
     ],
-    category_names: ['Orchestral', 'Chamber Music', 'Contemporary'],
+    category_names: ['Orchestral', 'Chamber Music', 'Opera', 'Contemporary'],
     location_ids: [LOC_ASPEN],
     reviews: [
       {
         rating: 5,
         year_attended: 2024,
         reviewer_name: 'ViolaFellow',
-        title: 'The best orchestra training I\'ve had',
+        title: "The best orchestra training I've had",
         body: 'Multiple orchestras, top conductors, and a beautiful setting. The repertoire was challenging and rewarding.',
       },
       {
@@ -320,7 +340,7 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-01-18T09:00:00Z'),
         audition_fee: 0,
         instructions: 'Submit recorded audition via portal. Live callbacks by invitation only.',
-        registration_url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/application-portal/',
+        registration_url: 'https://students.aspenmusicfestival.com/apply/',
         instrument_names: ['Violin', 'Viola', 'Cello'],
       },
       {
@@ -328,27 +348,33 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-01-25T13:00:00Z'),
         audition_fee: 0,
         instructions: 'Live auditions for winds and brass. 15-minute slots.',
-        registration_url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/application-portal/',
+        registration_url: 'https://students.aspenmusicfestival.com/apply/',
         instrument_names: ['Flute', 'Oboe', 'Clarinet', 'French Horn'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 3. Tanglewood Music Center
+  // Source: bso.org/tmc (program, fees, fellowship, application)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000003',
     name: 'Tanglewood Music Center',
     description:
-      'The Boston Symphony Orchestra\'s summer academy for the most gifted young professional musicians. Fellows receive full tuition, room, and board while working with BSO players, guest conductors, and new music specialists. Orchestral, chamber, contemporary, and conducting tracks.',
-    start_date: new Date('2026-06-21'),
-    end_date: new Date('2026-08-16'),
+      "The Boston Symphony Orchestra's elite summer academy for emerging professional musicians. Fellows work with BSO musicians and perform under world-renowned conductors including Music Director Andris Nelsons. Tracks in orchestral, chamber, vocal arts, composition, and conducting. Full fellowship covers tuition, housing, meals, and a stipend. A $250 registration fee is due upon acceptance.",
+    start_date: new Date('2026-06-26'),
+    end_date: new Date('2026-08-17'),
     application_deadline: new Date('2025-12-09'),
     tuition: 0,
-    application_fee: 125,
+    application_fee: 75,
     age_min: 18,
-    age_max: 30,
+    age_max: 35,
     offers_scholarship: true,
-    application_url: 'https://www.bso.org/tmc/apply-to-the-tmc',
+    application_url: 'https://tanglewood.getacceptd.com/',
     program_url: 'https://www.bso.org/tmc',
     instrument_names: [
+      'Voice',
       'Violin',
       'Viola',
       'Cello',
@@ -366,7 +392,6 @@ const PROGRAMS: ProgramSeed[] = [
       'Percussion',
       'Composition',
       'Conducting',
-      'Voice',
     ],
     category_names: ['Orchestral', 'Chamber Music', 'Contemporary'],
     location_ids: [LOC_TANGLEWOOD],
@@ -400,7 +425,7 @@ const PROGRAMS: ProgramSeed[] = [
         audition_fee: 50,
         instructions:
           'Recorded prescreen required. Live callbacks held at Symphony Hall in Boston.',
-        registration_url: 'https://www.bso.org/tmc/apply-to-the-tmc',
+        registration_url: 'https://tanglewood.getacceptd.com/',
         instrument_names: ['Violin', 'Viola', 'Cello', 'Double Bass'],
       },
       {
@@ -408,34 +433,31 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-01-17T10:00:00Z'),
         audition_fee: 50,
         instructions: 'Conducting fellowship live auditions. Candidates lead a reading session.',
-        registration_url: 'https://www.bso.org/tmc/apply-to-the-tmc',
+        registration_url: 'https://tanglewood.getacceptd.com/',
         instrument_names: ['Conducting'],
-      },
-      {
-        location_id: LOC_ASPEN,
-        time_slot: new Date('2026-01-24T10:00:00Z'),
-        audition_fee: 50,
-        instructions: 'West coast live audition day for winds, brass, and percussion.',
-        registration_url: 'https://www.bso.org/tmc/apply-to-the-tmc',
-        instrument_names: ['Flute', 'Clarinet', 'Trumpet', 'Percussion'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 4. Santa Fe Opera Apprentice Program for Singers
+  // Source: santafeopera.org, yaptracker.com
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000004',
-    name: 'Santa Fe Opera Apprentice Program',
+    name: 'Santa Fe Opera Apprentice Program for Singers',
     description:
-      'A prestigious summer residency for emerging opera singers integrated into Santa Fe Opera\'s main season. Apprentices cover principal roles, perform in scenes programs, and receive intensive language, movement, and coaching sessions. Stipend and housing provided.',
-    start_date: new Date('2026-05-25'),
-    end_date: new Date('2026-08-30'),
+      'An internationally recognized training program where approximately 45 emerging professional opera singers are chosen each season. Apprentices serve as the seasonal chorus, sing featured and supporting roles in main stage operas, and perform in dedicated Apprentice Scenes and an Apprentice Concert with the Santa Fe Opera Orchestra. This is a paid position under an AGMA contract with weekly compensation and a housing stipend.',
+    start_date: new Date('2026-06-01'),
+    end_date: new Date('2026-08-29'),
     application_deadline: new Date('2025-11-01'),
     tuition: 0,
-    application_fee: 85,
-    age_min: 21,
-    age_max: 30,
-    offers_scholarship: true,
+    application_fee: null,
+    age_min: null,
+    age_max: null,
+    offers_scholarship: false,
     application_url: 'https://www.santafeopera.org/company/singers/singers-application-info/',
-    program_url: 'https://www.santafeopera.org/apprentice-opportunities/',
+    program_url: 'https://www.santafeopera.org/company/singers/',
     instrument_names: ['Voice'],
     category_names: ['Opera'],
     location_ids: [LOC_SANTA_FE],
@@ -459,38 +481,35 @@ const PROGRAMS: ProgramSeed[] = [
       {
         location_id: LOC_SANTA_FE,
         time_slot: new Date('2025-11-15T09:30:00Z'),
-        audition_fee: 60,
+        audition_fee: null,
         instructions: 'Prepare five arias in multiple languages. Pianist provided.',
-        registration_url: 'https://www.santafeopera.org/company/singers/singers-application-info/',
-        instrument_names: ['Voice'],
-      },
-      {
-        location_id: LOC_RAVINIA,
-        time_slot: new Date('2025-11-22T09:30:00Z'),
-        audition_fee: 60,
-        instructions: 'Midwest audition tour stop. Same repertoire requirements.',
         registration_url: 'https://www.santafeopera.org/company/singers/singers-application-info/',
         instrument_names: ['Voice'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 5. Jerwood Young Artists at Glyndebourne
+  // Source: glyndebourne.com, operawire.com (2026 cohort)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000005',
-    name: 'Glyndebourne Young Artists Programme',
+    name: 'Jerwood Young Artists at Glyndebourne',
     description:
-      'A year-round development programme culminating in the Glyndebourne Festival season. Young artists understudy principal roles, perform in the Tour, and receive coaching in period style, English diction, and stagecraft. Salaried position.',
-    start_date: new Date('2026-05-10'),
-    end_date: new Date('2026-08-25'),
-    application_deadline: new Date('2025-10-15'),
+      'An internal development programme selecting 4-5 exceptionally talented singers from the Glyndebourne Chorus each season. Jerwood Young Artists perform small roles, understudy main-stage productions, and receive career-focused mentorship from leading conductors, directors, and vocal coaches across the full Festival and Tour seasons. Funded by Jerwood Arts. Note: this is not an open-application programme — artists are selected internally from the Glyndebourne Chorus.',
+    start_date: new Date('2026-04-01'),
+    end_date: new Date('2026-08-31'),
+    application_deadline: null,
     tuition: 0,
     application_fee: null,
-    age_min: 22,
-    age_max: 32,
-    offers_scholarship: true,
-    application_url: 'https://www.glyndebourne.com/about-us/talent-development/jerwood-young-artists/',
+    age_min: null,
+    age_max: null,
+    offers_scholarship: false,
+    application_url: null,
     program_url: 'https://www.glyndebourne.com/about-us/talent-development/jerwood-young-artists/',
     instrument_names: ['Voice'],
-    category_names: ['Opera', 'Baroque'],
+    category_names: ['Opera'],
     location_ids: [LOC_GLYNDEBOURNE],
     reviews: [
       {
@@ -498,7 +517,7 @@ const PROGRAMS: ProgramSeed[] = [
         year_attended: 2024,
         reviewer_name: 'LondonSoprano',
         title: 'A benchmark programme',
-        body: 'The coaching staff is world-class and the productions are genuinely beautiful. A salaried position makes a huge difference.',
+        body: 'The coaching staff is world-class and the productions are genuinely beautiful. Being part of both the Festival and Tour seasons was invaluable.',
       },
       {
         rating: 4,
@@ -512,54 +531,41 @@ const PROGRAMS: ProgramSeed[] = [
         year_attended: 2022,
         reviewer_name: 'CountertenorUK',
         title: 'Unmatched in the UK',
-        body: 'For any young singer working in Britain, this is the program to aim for.',
+        body: 'For any young singer working in Britain, this is the programme to aim for.',
       },
     ],
-    auditions: [
-      {
-        location_id: LOC_GLYNDEBOURNE,
-        time_slot: new Date('2025-09-20T10:00:00Z'),
-        audition_fee: 0,
-        instructions:
-          'Prepare four arias including one in English. Recalls held at Glyndebourne.',
-        registration_url: 'https://www.glyndebourne.com/about-us/talent-development/jerwood-young-artists/',
-        instrument_names: ['Voice'],
-      },
-      {
-        location_id: LOC_AIX,
-        time_slot: new Date('2025-10-04T10:00:00Z'),
-        audition_fee: 0,
-        instructions: 'Continental European audition day.',
-        registration_url: 'https://www.glyndebourne.com/about-us/talent-development/jerwood-young-artists/',
-        instrument_names: ['Voice'],
-      },
-    ],
+    auditions: [],
   },
+
+  // -------------------------------------------------------------------------
+  // 6. Académie du Festival d'Aix-en-Provence
+  // Source: festival-aix.com, academie.festival-aix.com, yaptracker.com
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000006',
-    name: "Académie du Festival d'Aix",
+    name: "Académie du Festival d'Aix-en-Provence",
     description:
-      "The Festival d'Aix-en-Provence's academy gathers young singers, instrumentalists, and composers for an immersive residency combining opera, art song, and baroque performance. Participants work with leading European artists and present public concerts.",
-    start_date: new Date('2026-07-01'),
-    end_date: new Date('2026-07-24'),
-    application_deadline: new Date('2026-01-31'),
+      "An international training institution founded in 1998 under Pierre Boulez's leadership. The Académie runs separate Voice and Instrumental/Composition residencies during the Festival, gathering early and mid-career artists for intensive work with internationally renowned artists. All expenses including masterclasses, accommodation, and round-trip travel are covered by the Festival. No age limit — selection is based on career stage, not age.",
+    start_date: new Date('2026-06-22'),
+    end_date: new Date('2026-07-21'),
+    application_deadline: new Date('2025-10-12'),
     tuition: 0,
-    application_fee: 60,
-    age_min: 20,
-    age_max: 30,
+    application_fee: null,
+    age_min: null,
+    age_max: null,
     offers_scholarship: true,
-    application_url: 'https://academie.festival-aix.com/apply',
-    program_url: 'https://academie.festival-aix.com',
-    instrument_names: ['Voice', 'Violin', 'Viola', 'Cello', 'Composition'],
-    category_names: ['Opera', 'Art Song / Lieder', 'Baroque'],
+    application_url: 'https://festival-aix.com/en/formations/2026-voice-residency',
+    program_url: 'https://festival-aix.com/academie',
+    instrument_names: ['Voice', 'Piano', 'Composition', 'Conducting'],
+    category_names: ['Opera', 'Art Song / Lieder'],
     location_ids: [LOC_AIX],
     reviews: [
       {
         rating: 5,
         year_attended: 2024,
-        reviewer_name: 'BaroqueFlute',
+        reviewer_name: 'VocalCoachParis',
         title: 'Magical in Provence',
-        body: 'Working with leading baroque specialists in such a stunning location was inspiring. The concert opportunities were real and public.',
+        body: 'Working with leading specialists in such a stunning location was inspiring. The concert opportunities were real and public.',
       },
       {
         rating: 4,
@@ -572,89 +578,34 @@ const PROGRAMS: ProgramSeed[] = [
     auditions: [
       {
         location_id: LOC_AIX,
-        time_slot: new Date('2026-02-14T10:00:00Z'),
-        audition_fee: 40,
-        instructions: 'Prepare three contrasting works including one baroque.',
-        registration_url: 'https://academie.festival-aix.com/apply',
-        instrument_names: ['Voice', 'Violin'],
-      },
-      {
-        location_id: LOC_SALZBURG,
-        time_slot: new Date('2026-02-21T10:00:00Z'),
-        audition_fee: 40,
-        instructions: 'Alternate European audition site.',
-        registration_url: 'https://academie.festival-aix.com/apply',
-        instrument_names: ['Voice', 'Composition'],
-      },
-    ],
-  },
-  {
-    id: '10000000-0000-0000-0000-000000000007',
-    name: 'Spoleto Festival dei Due Mondi — Accademia',
-    description:
-      'An Italian summer residency combining opera scenes, chamber music, and masterclasses in the medieval hilltop town of Spoleto. Participants perform in the festival\'s public series and work with Italian conservatory faculty.',
-    start_date: new Date('2026-06-26'),
-    end_date: new Date('2026-07-14'),
-    application_deadline: new Date('2026-03-01'),
-    tuition: 1500,
-    application_fee: 70,
-    age_min: 20,
-    age_max: 32,
-    offers_scholarship: true,
-    application_url: 'https://www.festivaldispoleto.com/en',
-    program_url: 'https://www.festivaldispoleto.com/en',
-    instrument_names: ['Voice', 'Violin', 'Viola', 'Cello', 'Piano'],
-    category_names: ['Opera', 'Chamber Music'],
-    location_ids: [LOC_SPOLETO],
-    reviews: [
-      {
-        rating: 4,
-        year_attended: 2024,
-        reviewer_name: 'PianistRoma',
-        title: 'Beautiful and intimate',
-        body: 'The town itself adds so much to the experience. Small cohort means lots of coaching time.',
-      },
-      {
-        rating: 3,
-        year_attended: 2023,
-        reviewer_name: 'StringQuartetUS',
-        title: 'Good but disorganized',
-        body: 'Musical content was strong but logistics could use some polish. Still, a memorable summer.',
-      },
-    ],
-    auditions: [
-      {
-        location_id: LOC_SPOLETO,
-        time_slot: new Date('2026-03-15T10:00:00Z'),
-        audition_fee: 50,
-        instructions: 'Live or recorded audition. Italian repertoire encouraged.',
-        registration_url: 'https://www.festivaldispoleto.com/en',
+        time_slot: new Date('2025-10-20T10:00:00Z'),
+        audition_fee: null,
+        instructions: 'Prepare three contrasting works. Details vary by residency track.',
+        registration_url: 'https://festival-aix.com/en/formations/2026-voice-residency',
         instrument_names: ['Voice', 'Piano'],
       },
-      {
-        location_id: LOC_AIX,
-        time_slot: new Date('2026-03-22T10:00:00Z'),
-        audition_fee: 50,
-        instructions: 'Regional Europe audition stop.',
-        registration_url: 'https://www.festivaldispoleto.com/en',
-        instrument_names: ['Violin', 'Cello'],
-      },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 7. Banff Centre — Chamber Music
+  // Source: banffcentre.ca (programs, chamber-music-2026)
+  // Note: formerly "Evolution: Classical" (discontinued after 2023)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000008',
-    name: 'Banff Centre — Evolution: Classical',
+    name: 'Banff Centre for Arts and Creativity — Chamber Music',
     description:
-      'A Canadian mountain residency focused on chamber music and contemporary performance practice. Participants work with visiting ensembles, commission new works, and present recitals in the Banff Centre\'s concert halls.',
+      'A collaborative chamber music residency in the Canadian Rockies led by the Parker Quartet. Individual musicians and established ensembles work with visiting faculty in intensive coaching sessions and public performances. Full tuition scholarship is automatic for all arts participants. Additional financial aid is available for accommodation and meals. Participants should expect to pay approximately CAD $1,200 for room and board after scholarship.',
     start_date: new Date('2026-07-05'),
     end_date: new Date('2026-07-26'),
     application_deadline: new Date('2026-02-15'),
     tuition: 2500,
-    application_fee: 65,
+    application_fee: 50,
     age_min: 18,
-    age_max: 30,
+    age_max: null,
     offers_scholarship: true,
-    application_url: 'https://www.banffcentre.ca/programs',
+    application_url: 'https://www.banffcentre.ca/programs/music/chamber-music-2026',
     program_url: 'https://www.banffcentre.ca/music',
     instrument_names: [
       'Violin',
@@ -688,7 +639,7 @@ const PROGRAMS: ProgramSeed[] = [
         year_attended: 2023,
         reviewer_name: null,
         title: 'Worth the flights',
-        body: 'Travel is a haul but once you\'re there it\'s magical.',
+        body: "Travel is a haul but once you're there it's magical.",
       },
     ],
     auditions: [
@@ -697,7 +648,7 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-02-25T17:00:00Z'),
         audition_fee: 0,
         instructions: 'Video submission only. No live audition.',
-        registration_url: 'https://www.banffcentre.ca/programs',
+        registration_url: 'https://www.banffcentre.ca/programs/music/chamber-music-2026',
         instrument_names: ['Violin', 'Cello', 'Piano'],
       },
       {
@@ -705,28 +656,33 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-03-04T17:00:00Z'),
         audition_fee: 0,
         instructions: 'Composer portfolio review round.',
-        registration_url: 'https://www.banffcentre.ca/programs',
+        registration_url: 'https://www.banffcentre.ca/programs/music/chamber-music-2026',
         instrument_names: ['Composition'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 8. Steans Music Institute at Ravinia
+  // Source: ravinia.org/programs/steans (programs, applications)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000009',
-    name: 'Ravinia Steans Music Institute — Program for Piano & Strings',
+    name: 'Steans Music Institute at Ravinia',
     description:
-      'A full-fellowship chamber music residency at Ravinia outside Chicago. Pianists and string players are matched into ensembles and coached intensively by leading chamber musicians, culminating in public performances.',
-    start_date: new Date('2026-06-08'),
-    end_date: new Date('2026-07-12'),
+      'An international training institute offering full-fellowship programs for exceptional emerging professional musicians. The Program for Piano and Strings features intensive chamber music coaching, while the separate Program for Singers focuses on art song and vocal repertoire. All fellows receive full tuition, accommodations, and meal service at no cost. No application fee.',
+    start_date: new Date('2026-06-21'),
+    end_date: new Date('2026-08-22'),
     application_deadline: new Date('2025-12-01'),
     tuition: 0,
-    application_fee: 95,
-    age_min: 18,
+    application_fee: 0,
+    age_min: 17,
     age_max: 30,
     offers_scholarship: true,
     application_url: 'https://www.ravinia.org/programs/steans/applications',
     program_url: 'https://www.ravinia.org/programs/steans',
-    instrument_names: ['Piano', 'Violin', 'Viola', 'Cello'],
-    category_names: ['Chamber Music'],
+    instrument_names: ['Piano', 'Violin', 'Viola', 'Cello', 'Voice'],
+    category_names: ['Chamber Music', 'Art Song / Lieder'],
     location_ids: [LOC_RAVINIA],
     reviews: [
       {
@@ -748,35 +704,40 @@ const PROGRAMS: ProgramSeed[] = [
       {
         location_id: LOC_RAVINIA,
         time_slot: new Date('2025-12-08T10:00:00Z'),
-        audition_fee: 50,
+        audition_fee: 0,
         instructions: 'Live audition required. Two contrasting chamber music excerpts plus solo work.',
         registration_url: 'https://www.ravinia.org/programs/steans/applications',
         instrument_names: ['Piano', 'Violin'],
       },
       {
-        location_id: LOC_TANGLEWOOD,
+        location_id: LOC_RAVINIA,
         time_slot: new Date('2025-12-15T10:00:00Z'),
-        audition_fee: 50,
-        instructions: 'East coast live audition day.',
+        audition_fee: 0,
+        instructions: 'Program for Singers auditions. Art song repertoire required.',
         registration_url: 'https://www.ravinia.org/programs/steans/applications',
-        instrument_names: ['Viola', 'Cello'],
+        instrument_names: ['Voice'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 9. Brevard Music Center Summer Institute
+  // Source: brevardmusic.org (institute, college programs, opera)
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000010',
     name: 'Brevard Music Center Summer Institute',
     description:
-      'A multi-week summer institute in the North Carolina mountains offering orchestral, opera, and chamber music training for students and emerging professionals. Festival performances feature students alongside artist faculty across six weeks.',
-    start_date: new Date('2026-06-20'),
-    end_date: new Date('2026-08-09'),
+      'A comprehensive summer music festival and training institute in the Blue Ridge Mountains. Programs include orchestral studies, opera (Janiec Opera Company), composition, and jazz for college-age and high school students. Tuition includes housing, meals, health services, and concert admission. Over 80% of students receive scholarship support through merit-based, need-based, and opportunity scholarships.',
+    start_date: new Date('2026-06-01'),
+    end_date: new Date('2026-08-03'),
     application_deadline: new Date('2026-01-20'),
-    tuition: 7500,
-    application_fee: 100,
+    tuition: 9400,
+    application_fee: 65,
     age_min: 14,
     age_max: 29,
     offers_scholarship: true,
-    application_url: 'https://mybmc.brevardmusic.org',
+    application_url: 'https://www.brevardmusic.org/institute/',
     program_url: 'https://www.brevardmusic.org',
     instrument_names: [
       'Voice',
@@ -785,12 +746,18 @@ const PROGRAMS: ProgramSeed[] = [
       'Cello',
       'Double Bass',
       'Flute',
+      'Oboe',
       'Clarinet',
+      'Bassoon',
+      'French Horn',
       'Trumpet',
       'Trombone',
+      'Tuba',
       'Percussion',
       'Piano',
+      'Harp',
       'Conducting',
+      'Composition',
     ],
     category_names: ['Orchestral', 'Opera', 'Chamber Music'],
     location_ids: [LOC_BREVARD],
@@ -814,7 +781,7 @@ const PROGRAMS: ProgramSeed[] = [
         year_attended: 2022,
         reviewer_name: 'ConductingFellow',
         title: 'Huge podium time',
-        body: 'As a conducting fellow I got more rehearsal time than anywhere else I\'ve been.',
+        body: "As a conducting fellow I got more rehearsal time than anywhere else I've been.",
       },
     ],
     auditions: [
@@ -823,7 +790,7 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-01-10T10:00:00Z'),
         audition_fee: 50,
         instructions: 'Recorded prescreen, live callbacks in Brevard.',
-        registration_url: 'https://mybmc.brevardmusic.org',
+        registration_url: 'https://www.brevardmusic.org/institute/',
         instrument_names: ['Violin', 'Cello', 'Flute'],
       },
       {
@@ -831,29 +798,35 @@ const PROGRAMS: ProgramSeed[] = [
         time_slot: new Date('2026-01-17T10:00:00Z'),
         audition_fee: 50,
         instructions: 'Voice and opera program auditions.',
-        registration_url: 'https://mybmc.brevardmusic.org',
+        registration_url: 'https://www.brevardmusic.org/institute/',
         instrument_names: ['Voice'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 10. Merola Opera Program
+  // Source: merola.org, sfopera.com/training/merola
+  // CORRECTED: location is San Francisco, not Santa Fe
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000011',
     name: 'Merola Opera Program',
     description:
-      'A highly selective summer training program for young opera singers, apprentice coaches, and stage directors. Merolini perform in a signature Grand Finale concert and two fully staged productions while receiving coaching from leading industry professionals.',
-    start_date: new Date('2026-06-01'),
-    end_date: new Date('2026-08-22'),
+      "San Francisco Opera's prestigious young artist training program. An intensive summer of coaching, masterclasses, and professional-quality opera productions, entirely free of charge. Participants receive a weekly stipend, round-trip transportation to San Francisco, and shared housing. Uniquely among young artist programs, Merola provides five years of post-program financial support for career development expenses. Approximately 28 artists are selected from over 1,500 applicants annually.",
+    start_date: new Date('2026-06-04'),
+    end_date: new Date('2026-08-15'),
     application_deadline: new Date('2025-11-05'),
     tuition: 0,
-    application_fee: 85,
-    age_min: 23,
-    age_max: 30,
+    application_fee: null,
+    age_min: 20,
+    age_max: 34,
     offers_scholarship: true,
     application_url: 'https://merola.org/apply/',
     program_url: 'https://merola.org',
     instrument_names: ['Voice', 'Piano'],
     category_names: ['Opera'],
-    location_ids: [LOC_SANTA_FE],
+    location_ids: [LOC_SAN_FRANCISCO],
     reviews: [
       {
         rating: 5,
@@ -879,9 +852,9 @@ const PROGRAMS: ProgramSeed[] = [
     ],
     auditions: [
       {
-        location_id: LOC_SANTA_FE,
+        location_id: LOC_SAN_FRANCISCO,
         time_slot: new Date('2025-11-20T10:00:00Z'),
-        audition_fee: 60,
+        audition_fee: null,
         instructions: 'Five-aria list required. Some candidates advance to coaching rounds.',
         registration_url: 'https://merola.org/apply/',
         instrument_names: ['Voice'],
@@ -889,38 +862,59 @@ const PROGRAMS: ProgramSeed[] = [
       {
         location_id: LOC_RAVINIA,
         time_slot: new Date('2025-11-27T10:00:00Z'),
-        audition_fee: 60,
+        audition_fee: null,
         instructions: 'Midwest audition stop.',
         registration_url: 'https://merola.org/apply/',
         instrument_names: ['Voice', 'Piano'],
       },
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // 11. American Institute of Musical Studies (AIMS)
+  // Source: aimsgraz.com (program, voice, orchestra, fund-your-experience)
+  // CORRECTED: location is Graz, not Salzburg
+  // -------------------------------------------------------------------------
   {
     id: '10000000-0000-0000-0000-000000000012',
-    name: 'AIMS Summer Vocal Academy',
+    name: 'American Institute of Musical Studies (AIMS)',
     description:
-      'An intensive six-week European summer vocal academy focusing on German operatic and lieder repertoire. Singers receive daily coaching, language lessons, and masterclasses, culminating in public concerts and a stage audition tour.',
-    start_date: new Date('2026-06-15'),
-    end_date: new Date('2026-07-27'),
-    application_deadline: new Date('2026-03-10'),
-    tuition: 3800,
-    application_fee: 90,
-    age_min: 20,
-    age_max: 35,
+      'An intensive six-week summer program in Graz, Austria for singers, collaborative pianists, and orchestral musicians. International faculty lead training in opera, Lieder, and performance practice through the Opera Studio and Lieder Studio tracks. The AIMS Festival Orchestra is tuition-free and includes housing, meals, and German language classes. Vocal and piano program scholarships of 5-50% of tuition are available based on audition results. Operating annually since 1969.',
+    start_date: new Date('2026-07-06'),
+    end_date: new Date('2026-08-16'),
+    application_deadline: new Date('2026-04-15'),
+    tuition: 7500,
+    application_fee: 250,
+    age_min: 18,
+    age_max: null,
     offers_scholarship: true,
-    application_url: 'https://aimsgraz.com/audition/',
+    application_url: 'https://app.getacceptd.com/aims',
     program_url: 'https://aimsgraz.com',
-    instrument_names: ['Voice'],
-    category_names: ['Opera', 'Art Song / Lieder'],
-    location_ids: [LOC_SALZBURG],
+    instrument_names: [
+      'Voice',
+      'Piano',
+      'Violin',
+      'Viola',
+      'Cello',
+      'Flute',
+      'Oboe',
+      'Clarinet',
+      'French Horn',
+      'Trumpet',
+      'Trombone',
+      'Tuba',
+      'Percussion',
+      'Harp',
+    ],
+    category_names: ['Opera', 'Art Song / Lieder', 'Orchestral'],
+    location_ids: [LOC_GRAZ],
     reviews: [
       {
         rating: 4,
         year_attended: 2024,
         reviewer_name: 'LiederLover',
         title: 'German immersion at its best',
-        body: 'Daily German lessons plus lieder coaching made a measurable difference in my singing. Great social atmosphere too.',
+        body: 'Daily German lessons plus Lieder coaching made a measurable difference in my singing. Great social atmosphere too.',
       },
       {
         rating: 3,
@@ -932,19 +926,11 @@ const PROGRAMS: ProgramSeed[] = [
     ],
     auditions: [
       {
-        location_id: LOC_SALZBURG,
+        location_id: LOC_GRAZ,
         time_slot: new Date('2026-03-18T10:00:00Z'),
-        audition_fee: 40,
+        audition_fee: null,
         instructions: 'Four arias including at least two in German.',
-        registration_url: 'https://aimsgraz.com/audition/',
-        instrument_names: ['Voice'],
-      },
-      {
-        location_id: LOC_GLYNDEBOURNE,
-        time_slot: new Date('2026-03-25T10:00:00Z'),
-        audition_fee: 40,
-        instructions: 'UK audition stop. Accompanist provided.',
-        registration_url: 'https://aimsgraz.com/audition/',
+        registration_url: 'https://app.getacceptd.com/aims',
         instrument_names: ['Voice'],
       },
     ],
@@ -956,6 +942,20 @@ const PROGRAMS: ProgramSeed[] = [
 // ---------------------------------------------------------------------------
 
 async function main() {
+  // Clean slate — wipe all program-related data before re-seeding
+  console.log('Cleaning existing data...')
+  await prisma.programCandidate.deleteMany()
+  await prisma.importRun.deleteMany()
+  await prisma.importSource.deleteMany()
+  await prisma.auditionInstrument.deleteMany()
+  await prisma.audition.deleteMany()
+  await prisma.review.deleteMany()
+  await prisma.programInstrument.deleteMany()
+  await prisma.programCategory.deleteMany()
+  await prisma.programLocation.deleteMany()
+  await prisma.programProduction.deleteMany()
+  await prisma.program.deleteMany()
+
   console.log('Seeding instruments...')
   const instrumentIdByName = new Map<string, string>()
   for (const name of INSTRUMENT_NAMES) {
@@ -1000,10 +1000,13 @@ async function main() {
 
   console.log('Seeding programs...')
   for (const program of PROGRAMS) {
+    const slug = toSlug(program.name)
+
     await prisma.program.upsert({
       where: { id: program.id },
       update: {
         name: program.name,
+        slug,
         description: program.description,
         start_date: program.start_date,
         end_date: program.end_date,
@@ -1019,6 +1022,7 @@ async function main() {
       create: {
         id: program.id,
         name: program.name,
+        slug,
         description: program.description,
         start_date: program.start_date,
         end_date: program.end_date,
@@ -1086,19 +1090,7 @@ async function main() {
       })
     }
 
-    // Reviews
-    for (const review of program.reviews) {
-      await prisma.review.create({
-        data: {
-          program_id: program.id,
-          rating: review.rating,
-          year_attended: review.year_attended,
-          reviewer_name: review.reviewer_name,
-          title: review.title,
-          body: review.body,
-        },
-      })
-    }
+    // Reviews skipped — production seed starts with 0 reviews
 
     // Auditions (with instrument join rows)
     for (const audition of program.auditions) {
@@ -1126,67 +1118,57 @@ async function main() {
   // Import sources — canonical URLs for the scraping pipeline
   // ---------------------------------------------------------------------------
 
+  // Multiple sources per program allow the scraping pipeline to combine
+  // information from several pages into one complete extraction.
   const importSources = [
-    {
-      name: 'Salzburg Festival Young Singers Project',
-      url: 'https://www.salzburgfestival.at/young-singers-project',
-      program_id: '10000000-0000-0000-0000-000000000001',
-    },
-    {
-      name: 'Aspen Music Festival and School',
-      url: 'https://www.aspenmusicfestival.com/school/',
-      program_id: '10000000-0000-0000-0000-000000000002',
-    },
-    {
-      name: 'Tanglewood Music Center',
-      url: 'https://www.bso.org/tanglewood/tmc',
-      program_id: '10000000-0000-0000-0000-000000000003',
-    },
-    {
-      name: 'Santa Fe Opera Apprentice Program',
-      url: 'https://www.santafeopera.org/about/apprentice-singers',
-      program_id: '10000000-0000-0000-0000-000000000004',
-    },
-    {
-      name: 'Glyndebourne Young Artists Programme',
-      url: 'https://www.glyndebourne.com/discover/young-artists/',
-      program_id: '10000000-0000-0000-0000-000000000005',
-    },
-    {
-      name: "Académie du Festival d'Aix",
-      url: 'https://festival-aix.com/en/academie',
-      program_id: '10000000-0000-0000-0000-000000000006',
-    },
-    {
-      name: 'Spoleto Festival dei Due Mondi — Accademia',
-      url: 'https://www.festivaldispoleto.com/en/',
-      program_id: '10000000-0000-0000-0000-000000000007',
-    },
-    {
-      name: 'Banff Centre — Evolution: Classical',
-      url: 'https://www.banffcentre.ca/programs/evolution-classical',
-      program_id: '10000000-0000-0000-0000-000000000008',
-    },
-    {
-      name: 'Ravinia Steans Music Institute',
-      url: 'https://www.ravinia.org/page/steans',
-      program_id: '10000000-0000-0000-0000-000000000009',
-    },
-    {
-      name: 'Brevard Music Center Summer Institute',
-      url: 'https://www.brevardmusic.org/summer-institute',
-      program_id: '10000000-0000-0000-0000-000000000010',
-    },
-    {
-      name: 'Merola Opera Program',
-      url: 'https://merola.org/',
-      program_id: '10000000-0000-0000-0000-000000000011',
-    },
-    {
-      name: 'AIMS Summer Vocal Academy',
-      url: 'https://www.aims.co.at/',
-      program_id: '10000000-0000-0000-0000-000000000012',
-    },
+    // --- Salzburg YSP ---
+    { name: 'Salzburg YSP — Main', url: 'https://www.salzburgerfestspiele.at/en/young-singers-project', program_id: '10000000-0000-0000-0000-000000000001' },
+    { name: 'Salzburg YSP — Talent Development', url: 'https://www.salzburgerfestspiele.at/en/talent-development', program_id: '10000000-0000-0000-0000-000000000001' },
+
+    // --- Aspen ---
+    { name: 'Aspen — Programs of Study', url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/programs-of-study/', program_id: '10000000-0000-0000-0000-000000000002' },
+    { name: 'Aspen — Fees & Deadlines', url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/application-fees-and-deadlines', program_id: '10000000-0000-0000-0000-000000000002' },
+    { name: 'Aspen — Costs & Payment', url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/costs-payment-and-refund-policy', program_id: '10000000-0000-0000-0000-000000000002' },
+    { name: 'Aspen — Fellowships', url: 'https://www.aspenmusicfestival.com/students-welcome/admissions/fellowships-and-financial-assistance', program_id: '10000000-0000-0000-0000-000000000002' },
+
+    // --- TMC ---
+    { name: 'TMC — Main', url: 'https://www.bso.org/tmc', program_id: '10000000-0000-0000-0000-000000000003' },
+    { name: 'TMC — Fees & Requirements', url: 'https://www.bso.org/tmc/program-fees-and-requirements', program_id: '10000000-0000-0000-0000-000000000003' },
+    { name: 'TMC — Fellowships', url: 'https://www.bso.org/tmc/fellowship-programs', program_id: '10000000-0000-0000-0000-000000000003' },
+
+    // --- Santa Fe Opera ---
+    { name: 'Santa Fe Opera — Singers', url: 'https://www.santafeopera.org/company/singers/', program_id: '10000000-0000-0000-0000-000000000004' },
+    { name: 'Santa Fe Opera — Application Info', url: 'https://www.santafeopera.org/company/singers/singers-application-info/', program_id: '10000000-0000-0000-0000-000000000004' },
+
+    // --- Glyndebourne ---
+    { name: 'Glyndebourne — Jerwood Young Artists', url: 'https://www.glyndebourne.com/about-us/talent-development/jerwood-young-artists/', program_id: '10000000-0000-0000-0000-000000000005' },
+
+    // --- Aix ---
+    { name: 'Aix — Académie', url: 'https://festival-aix.com/academie', program_id: '10000000-0000-0000-0000-000000000006' },
+    { name: 'Aix — 2026 Voice Residency', url: 'https://festival-aix.com/en/formations/2026-voice-residency', program_id: '10000000-0000-0000-0000-000000000006' },
+
+    // --- Banff ---
+    { name: 'Banff — Music Programs', url: 'https://www.banffcentre.ca/music', program_id: '10000000-0000-0000-0000-000000000008' },
+    { name: 'Banff — Chamber Music 2026', url: 'https://www.banffcentre.ca/programs/music/chamber-music-2026', program_id: '10000000-0000-0000-0000-000000000008' },
+
+    // --- Ravinia ---
+    { name: 'Ravinia — Steans Institute', url: 'https://www.ravinia.org/programs/steans', program_id: '10000000-0000-0000-0000-000000000009' },
+    { name: 'Ravinia — Applications', url: 'https://www.ravinia.org/programs/steans/applications', program_id: '10000000-0000-0000-0000-000000000009' },
+
+    // --- Brevard ---
+    { name: 'Brevard — Institute', url: 'https://www.brevardmusic.org/institute/', program_id: '10000000-0000-0000-0000-000000000010' },
+    { name: 'Brevard — Opera', url: 'https://www.brevardmusic.org/institute/college/opera/', program_id: '10000000-0000-0000-0000-000000000010' },
+
+    // --- Merola ---
+    { name: 'Merola — Main', url: 'https://merola.org', program_id: '10000000-0000-0000-0000-000000000011' },
+    { name: 'Merola — Apply', url: 'https://merola.org/apply/', program_id: '10000000-0000-0000-0000-000000000011' },
+    { name: 'Merola — SF Opera', url: 'https://www.sfopera.com/training/merola/', program_id: '10000000-0000-0000-0000-000000000011' },
+
+    // --- AIMS ---
+    { name: 'AIMS — Main', url: 'https://aimsgraz.com', program_id: '10000000-0000-0000-0000-000000000012' },
+    { name: 'AIMS — The Program', url: 'https://aimsgraz.com/the-program/', program_id: '10000000-0000-0000-0000-000000000012' },
+    { name: 'AIMS — Voice', url: 'https://aimsgraz.com/the-program/voice/', program_id: '10000000-0000-0000-0000-000000000012' },
+    { name: 'AIMS — Fund Your Experience', url: 'https://aimsgraz.com/the-program/fund-your-experience/', program_id: '10000000-0000-0000-0000-000000000012' },
   ]
 
   for (const source of importSources) {
