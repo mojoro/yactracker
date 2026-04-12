@@ -68,6 +68,28 @@ export async function rejectCandidate(formData: FormData) {
   revalidatePath('/admin/import')
 }
 
+/**
+ * Add a new ImportSource.
+ */
+export async function addSource(formData: FormData) {
+  const name = (formData.get('name') as string)?.trim()
+  const url = (formData.get('url') as string)?.trim()
+  const programId = (formData.get('program_id') as string)?.trim() || null
+
+  if (!name || !url) throw new Error('Name and URL are required')
+
+  await prisma.importSource.create({
+    data: {
+      name,
+      url,
+      status: 'active',
+      program_id: programId,
+    },
+  })
+
+  revalidatePath('/admin/import')
+}
+
 export interface ScrapeState {
   summary?: string
   error?: string

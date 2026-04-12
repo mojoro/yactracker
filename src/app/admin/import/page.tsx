@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { isAdminAuthenticated, adminLogout } from '../actions'
-import { approveCandidate, rejectCandidate } from './actions'
+import { approveCandidate, rejectCandidate, addSource } from './actions'
 import { ScrapeButton } from './scrape-button'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
@@ -40,12 +40,22 @@ export default async function AdminImportPage({
     },
   })
 
-  const counts = await prisma.programCandidate.groupBy({
-    by: ['status'],
-    _count: true,
-  })
+  const [countRows, sources] = await Promise.all([
+    prisma.programCandidate.groupBy({ by: ['status'], _count: true }),
+    prisma.importSource.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        url: true,
+        status: true,
+        last_fetched_at: true,
+        program: { select: { id: true, name: true } },
+      },
+    }),
+  ])
   const countMap: Record<string, number> = {}
-  for (const c of counts) countMap[c.status] = c._count
+  for (const c of countRows) countMap[c.status] = c._count
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -130,6 +140,116 @@ export default async function AdminImportPage({
           })}
         </div>
       )}
+
+      {/* Sources */}
+      <section className="mt-10 border-t border-gray-200 pt-8">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Sources ({sources.length})
+        </h2>
+
+        {sources.length > 0 && (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+                  <th className="pb-2 pr-4">Name</th>
+                  <th className="pb-2 pr-4">URL</th>
+                  <th className="pb-2 pr-4">Status</th>
+                  <th className="pb-2 pr-4">Linked program</th>
+                  <th className="pb-2">Last fetched</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sources.map((s) => (
+                  <tr key={s.id} className="border-b border-gray-100">
+                    <td className="py-2 pr-4 font-medium text-gray-900">{s.name}</td>
+                    <td className="py-2 pr-4">
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate block max-w-xs"
+                      >
+                        {s.url}
+                      </a>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        s.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : s.status === 'paused'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                      }`}>
+                        {s.status}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-gray-600">
+                      {s.program ? (
+                        <Link href={`/programs/${s.program.id}`} className="text-blue-600 hover:underline">
+                          {s.program.name}
+                        </Link>
+                      ) : '—'}
+                    </td>
+                    <td className="py-2 text-gray-500">
+                      {s.last_fetched_at
+                        ? s.last_fetched_at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'Never'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Add source form */}
+        <form action={addSource} className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+          <h3 className="text-sm font-medium text-gray-900">Add source</h3>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label htmlFor="source_name" className="block text-xs text-gray-600">Name</label>
+              <input
+                id="source_name"
+                name="name"
+                type="text"
+                required
+                placeholder="e.g. Wolf Trap Opera"
+                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="source_url" className="block text-xs text-gray-600">URL</label>
+              <input
+                id="source_url"
+                name="url"
+                type="url"
+                required
+                placeholder="https://..."
+                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="source_program_id" className="block text-xs text-gray-600">
+                Link to program (optional)
+              </label>
+              <input
+                id="source_program_id"
+                name="program_id"
+                type="text"
+                placeholder="Program UUID"
+                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="mt-3 rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Add source
+          </button>
+        </form>
+      </section>
     </div>
   )
 }
