@@ -100,6 +100,14 @@ export default function RootLayout({
                       john@johnmoorman.com
                     </a>
                     <a
+                      href="https://johnmoorman.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-white"
+                    >
+                      johnmoorman.com
+                    </a>
+                    <a
                       href="https://www.linkedin.com/in/john-moorman/"
                       target="_blank"
                       rel="noopener noreferrer"
