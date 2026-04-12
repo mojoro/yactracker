@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   title: YACTracker API
   description: |
@@ -7,6 +7,8 @@ info:
   version: 0.1.0
   contact:
     name: YACTracker Team
+    email: api@yactracker.app
+    url: https://yactracker.app
   x-api-id: yactracker-api
   x-audience: external-public
 
@@ -23,13 +25,13 @@ paths:
     get:
       summary: List and filter programs
       description: |
-        Returns a paginated list of programs. Supports filtering by instrument,
-        category, location, and deadline status. Supports sorting via the `sort`
-        query parameter.
+        Returns a cursor-paginated list of programs. Supports filtering by
+        instrument, category, location, and deadline status. Supports sorting
+        via the `sort` query parameter.
       operationId: listPrograms
       parameters:
-        - $ref: '#/components/parameters/PageNumber'
-        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Sort'
         - name: instrument_id
           in: query
@@ -81,13 +83,17 @@ paths:
             type: string
       responses:
         '200':
-          description: A paginated list of programs.
+          description: A cursor-paginated list of programs.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create a program
@@ -113,9 +119,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Program'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /programs/{program_id}:
     get:
@@ -131,9 +139,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Program'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     put:
       summary: Update a program
@@ -155,11 +165,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Program'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   # ---- Reviews (sub-resource of Program) ----------------------------------
   /programs/{program_id}/reviews:
@@ -168,8 +180,8 @@ paths:
       operationId: listProgramReviews
       parameters:
         - $ref: '#/components/parameters/ProgramId'
-        - $ref: '#/components/parameters/PageNumber'
-        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Sort'
         - name: rating
           in: query
@@ -185,15 +197,19 @@ paths:
             type: integer
       responses:
         '200':
-          description: A paginated list of reviews for the program.
+          description: A cursor-paginated list of reviews for the program.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create a review for a program
@@ -220,11 +236,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Review'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /programs/{program_id}/reviews/{review_id}:
     get:
@@ -241,9 +259,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Review'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     put:
       summary: Update a review
@@ -265,11 +285,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Review'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   # ---- Auditions (sub-resource of Program) --------------------------------
   /programs/{program_id}/auditions:
@@ -278,8 +300,8 @@ paths:
       operationId: listProgramAuditions
       parameters:
         - $ref: '#/components/parameters/ProgramId'
-        - $ref: '#/components/parameters/PageNumber'
-        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
         - name: after
           in: query
           description: Return auditions with time_slot after this datetime.
@@ -294,15 +316,19 @@ paths:
             format: date-time
       responses:
         '200':
-          description: A paginated list of auditions for the program.
+          description: A cursor-paginated list of auditions for the program.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditionListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create an audition for a program
@@ -329,11 +355,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Audition'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /programs/{program_id}/auditions/{audition_id}:
     get:
@@ -350,9 +378,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Audition'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     put:
       summary: Update an audition
@@ -374,11 +404,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Audition'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   # ---- Reference data ------------------------------------------------------
   /instruments:
@@ -399,8 +431,10 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Instrument'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create an instrument
@@ -419,9 +453,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Instrument'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /instruments/{instrument_id}:
     put:
@@ -448,11 +484,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Instrument'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /categories:
     get:
@@ -472,8 +510,10 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Category'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create a category
@@ -492,9 +532,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /categories/{category_id}:
     put:
@@ -521,11 +563,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /locations:
     get:
@@ -551,8 +595,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
     post:
       summary: Create a location
@@ -571,9 +619,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Location'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
   /locations/{location_id}:
     put:
@@ -600,11 +650,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Location'
         '400':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
         default:
-          $ref: '#/components/responses/Problem'
+          $ref: '#/components/responses/DefaultError'
 
 # ---------------------------------------------------------------------------
 # COMPONENTS
@@ -640,20 +692,20 @@ components:
         type: string
         format: uuid
 
-    PageNumber:
-      name: page[number]
+    Cursor:
+      name: cursor
       in: query
-      description: Page number (zero-indexed).
+      description: |
+        Opaque cursor token identifying the start of the page. Obtain from
+        the `next` or `prev` field of a previous list response. Omit to
+        fetch the first page.
       schema:
-        type: integer
-        format: int32
-        minimum: 0
-        default: 0
+        type: string
 
-    PageSize:
-      name: page[size]
+    Limit:
+      name: limit
       in: query
-      description: Number of items per page.
+      description: Maximum number of items per page.
       schema:
         type: integer
         format: int32
@@ -672,8 +724,29 @@ components:
 
   # ---- Reusable responses -------------------------------------------------
   responses:
-    Problem:
-      description: An error occurred — see status code and problem object for details.
+    BadRequest:
+      description: Malformed request or invalid parameters.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    DefaultError:
+      description: Unexpected error.
       content:
         application/problem+json:
           schema:
@@ -682,52 +755,56 @@ components:
   # ---- Schemas ------------------------------------------------------------
   schemas:
 
-    # -- Problem (RFC 9457) --
+    # -- Problem (RFC 9457 / Zalando guideline §176) --
     Problem:
       type: object
       description: Problem detail object per RFC 9457.
       properties:
         type:
           type: string
-          description: A relative URI reference identifying the problem type.
-          examples:
-            - /problems/not-found
+          format: uri-reference
+          default: about:blank
+          description: |
+            A URI reference that identifies the problem type. When dereferenced,
+            it SHOULD provide human-readable documentation for the problem type.
+          example: /problems/not-found
         title:
           type: string
-          description: A short human-readable summary of the problem.
-          examples:
-            - Resource not found
+          description: A short human-readable summary of the problem type.
+          example: Resource not found
         status:
           type: integer
           format: int32
-          description: The HTTP status code.
-          examples:
-            - 404
+          minimum: 100
+          maximum: 600
+          exclusiveMaximum: true
+          description: The HTTP status code generated for this occurrence.
+          example: 404
         detail:
           type: string
           description: Human-readable explanation specific to this occurrence.
-          examples:
-            - Program with id '550e8400-e29b-41d4-a716-446655440000' not found.
+          example: Program with id '550e8400-e29b-41d4-a716-446655440000' not found.
         instance:
           type: string
-          description: A URI reference identifying this specific occurrence.
+          format: uri-reference
+          description: A URI reference that identifies this specific occurrence of the problem.
 
-    # -- Pagination --
-    PaginationMeta:
+    # -- Cursor pagination meta --
+    CursorPageMeta:
       type: object
+      description: |
+        Cursor-based pagination metadata. `next` and `prev` are opaque tokens
+        passed to the `cursor` query parameter on subsequent requests. Both
+        are null when no further page exists in that direction.
       properties:
-        page_number:
-          type: integer
-          format: int32
-        page_size:
-          type: integer
-          format: int32
-        total_pages:
-          type: integer
-          format: int32
-        total_items:
-          type: integer
-          format: int32
+        next:
+          type: string
+          nullable: true
+          description: Opaque cursor for the next page, or null if this is the last page.
+        prev:
+          type: string
+          nullable: true
+          description: Opaque cursor for the previous page, or null if this is the first page.
 
     # -- Program --
     Program:
@@ -744,8 +821,7 @@ components:
           readOnly: true
         name:
           type: string
-          examples:
-            - Salzburg Festival Young Singers Project
+          example: Salzburg Festival Young Singers Project
         description:
           type: string
         start_date:
@@ -760,13 +836,11 @@ components:
         tuition:
           type: number
           format: float
-          examples:
-            - 2500.00
+          example: 2500.00
         application_fee:
           type: number
           format: float
-          examples:
-            - 75.00
+          example: 75.00
         age_min:
           type: integer
           format: int32
@@ -786,7 +860,7 @@ components:
           type: number
           format: float
           readOnly: true
-          description: Computed average of all review ratings (1.0–5.0).
+          description: Computed average of all review ratings (1.0 to 5.0).
         review_count:
           type: integer
           format: int32
@@ -879,7 +953,7 @@ components:
           items:
             $ref: '#/components/schemas/Program'
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: '#/components/schemas/CursorPageMeta'
 
     # -- Review --
     Review:
@@ -908,17 +982,14 @@ components:
         year_attended:
           type: integer
           format: int32
-          examples:
-            - 2025
+          example: 2025
         reviewer_name:
           type: string
           description: Display name of the reviewer (anonymous if omitted).
-          examples:
-            - Soprano2025
+          example: Soprano2025
         title:
           type: string
-          examples:
-            - Transformative experience
+          example: Transformative experience
         body:
           type: string
         created_at:
@@ -961,7 +1032,7 @@ components:
           items:
             $ref: '#/components/schemas/Review'
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: '#/components/schemas/CursorPageMeta'
 
     # -- Audition --
     Audition:
@@ -984,7 +1055,6 @@ components:
           format: uuid
         location:
           $ref: '#/components/schemas/Location'
-          readOnly: true
         time_slot:
           type: string
           format: date-time
@@ -1020,7 +1090,7 @@ components:
           items:
             $ref: '#/components/schemas/Audition'
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: '#/components/schemas/CursorPageMeta'
 
     AuditionInput:
       type: object
@@ -1084,8 +1154,7 @@ components:
           format: uuid
         name:
           type: string
-          examples:
-            - violin
+          example: violin
 
     Category:
       type: object
@@ -1098,8 +1167,7 @@ components:
           format: uuid
         name:
           type: string
-          examples:
-            - opera
+          example: opera
 
     Location:
       type: object
@@ -1113,12 +1181,10 @@ components:
           format: uuid
         city:
           type: string
-          examples:
-            - Salzburg
+          example: Salzburg
         country:
           type: string
-          examples:
-            - Austria
+          example: Austria
         state:
           type: string
         address:
