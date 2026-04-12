@@ -84,30 +84,40 @@ export async function updateProgram(
       return { city: parts[0] || l, country: parts[1] || '', state: parts[2] || null }
     }).filter((l) => l.city && l.country)
 
-    // Resolve names to IDs
+    // Validate names against existing reference data (case-insensitive)
+    const [allInstruments, allCategories] = await Promise.all([
+      prisma.instrument.findMany({ select: { id: true, name: true } }),
+      prisma.category.findMany({ select: { id: true, name: true } }),
+    ])
+
     const instrumentIds: string[] = []
+    const unknownInstruments: string[] = []
     for (const name of instrumentNames) {
-      const row = await prisma.instrument.upsert({
-        where: { name },
-        create: { name },
-        update: {},
-        select: { id: true },
-      })
-      instrumentIds.push(row.id)
+      const match = allInstruments.find(
+        (i) => i.name.toLowerCase() === name.toLowerCase(),
+      )
+      if (match) instrumentIds.push(match.id)
+      else unknownInstruments.push(name)
+    }
+    if (unknownInstruments.length > 0) {
+      return { error: `Unknown instruments: ${unknownInstruments.join(', ')}. Check spelling or add them first.` }
     }
 
     const categoryIds: string[] = []
+    const unknownCategories: string[] = []
     for (const name of categoryNames) {
-      const row = await prisma.category.upsert({
-        where: { name },
-        create: { name },
-        update: {},
-        select: { id: true },
-      })
-      categoryIds.push(row.id)
+      const match = allCategories.find(
+        (c) => c.name.toLowerCase() === name.toLowerCase(),
+      )
+      if (match) categoryIds.push(match.id)
+      else unknownCategories.push(name)
+    }
+    if (unknownCategories.length > 0) {
+      return { error: `Unknown categories: ${unknownCategories.join(', ')}. Check spelling or add them first.` }
     }
 
     const locationIds: string[] = []
+    const unknownLocations: string[] = []
     for (const loc of locationEntries) {
       const existing = await prisma.location.findFirst({
         where: {
@@ -119,12 +129,11 @@ export async function updateProgram(
       if (existing) {
         locationIds.push(existing.id)
       } else {
-        const row = await prisma.location.create({
-          data: { city: loc.city, country: loc.country, state: loc.state },
-          select: { id: true },
-        })
-        locationIds.push(row.id)
+        unknownLocations.push(`${loc.city}/${loc.country}`)
       }
+    }
+    if (unknownLocations.length > 0) {
+      return { error: `Unknown locations: ${unknownLocations.join(', ')}. Add them via the API first.` }
     }
 
     await prisma.$transaction(async (tx) => {

@@ -52,7 +52,17 @@ function Field({
   )
 }
 
-export function ProgramEditor({ program }: { program: ProgramData }) {
+export function ProgramEditor({
+  program,
+  validInstruments,
+  validCategories,
+  validLocations,
+}: {
+  program: ProgramData
+  validInstruments: string[]
+  validCategories: string[]
+  validLocations: string[]
+}) {
   const [state, action, pending] = useActionState(updateProgram, null)
 
   return (
@@ -161,6 +171,9 @@ export function ProgramEditor({ program }: { program: ProgramData }) {
             defaultValue={program.instruments}
             placeholder="Voice, Piano, Violin"
           />
+          <p className="mt-1 text-xs text-gray-400">
+            Valid: {validInstruments.join(', ')}
+          </p>
         </div>
         <div className="sm:col-span-2">
           <Field
@@ -169,6 +182,9 @@ export function ProgramEditor({ program }: { program: ProgramData }) {
             defaultValue={program.categories}
             placeholder="Opera, Chamber Music"
           />
+          <p className="mt-1 text-xs text-gray-400">
+            Valid: {validCategories.join(', ')}
+          </p>
         </div>
         <div className="sm:col-span-2">
           <Field
@@ -177,6 +193,9 @@ export function ProgramEditor({ program }: { program: ProgramData }) {
             defaultValue={program.locations}
             placeholder="Salzburg/Austria, Aspen/US"
           />
+          <p className="mt-1 text-xs text-gray-400">
+            Valid: {validLocations.join(', ')}
+          </p>
         </div>
       </div>
 

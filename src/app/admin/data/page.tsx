@@ -18,14 +18,19 @@ export default async function AdminDataPage({
   const params = await searchParams
   const selectedProgramId = typeof params.program === 'string' ? params.program : null
 
-  const programs = await prisma.program.findMany({
-    orderBy: { name: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      _count: { select: { reviews: true, auditions: true } },
-    },
-  })
+  const [programs, allInstruments, allCategories, allLocations] = await Promise.all([
+    prisma.program.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        _count: { select: { reviews: true, auditions: true } },
+      },
+    }),
+    prisma.instrument.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
+    prisma.category.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
+    prisma.location.findMany({ orderBy: { city: 'asc' }, select: { city: true, country: true } }),
+  ])
 
   let reviews: Array<{
     id: string
@@ -196,6 +201,9 @@ export default async function AdminDataPage({
                 categories: fullProgram.program_categories.map((pc) => pc.category.name).join(', '),
                 locations: fullProgram.program_locations.map((pl) => `${pl.location.city}/${pl.location.country}`).join(', '),
               }}
+              validInstruments={allInstruments.map((i) => i.name)}
+              validCategories={allCategories.map((c) => c.name)}
+              validLocations={allLocations.map((l) => `${l.city}/${l.country}`)}
             />
           </div>
         </section>

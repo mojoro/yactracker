@@ -129,37 +129,39 @@ export async function upsertProgramFromExtraction(
 }
 
 // ---------------------------------------------------------------------------
-// Name → ID resolvers (upsert on name for idempotency)
+// Name → ID resolvers (match against existing, skip unknown)
 // ---------------------------------------------------------------------------
 
 async function resolveInstruments(names: string[]): Promise<string[]> {
+  if (names.length === 0) return []
+  const all = await prisma.instrument.findMany({ select: { id: true, name: true } })
   const ids: string[] = []
   for (const name of names) {
     const trimmed = name.trim()
     if (!trimmed) continue
-    const row = await prisma.instrument.upsert({
-      where: { name: trimmed },
-      create: { name: trimmed },
-      update: {},
-      select: { id: true },
-    })
-    ids.push(row.id)
+    const match = all.find((i) => i.name.toLowerCase() === trimmed.toLowerCase())
+    if (match) {
+      ids.push(match.id)
+    } else {
+      console.warn(`[upsert] Skipping unknown instrument: "${trimmed}"`)
+    }
   }
   return ids
 }
 
 async function resolveCategories(names: string[]): Promise<string[]> {
+  if (names.length === 0) return []
+  const all = await prisma.category.findMany({ select: { id: true, name: true } })
   const ids: string[] = []
   for (const name of names) {
     const trimmed = name.trim()
     if (!trimmed) continue
-    const row = await prisma.category.upsert({
-      where: { name: trimmed },
-      create: { name: trimmed },
-      update: {},
-      select: { id: true },
-    })
-    ids.push(row.id)
+    const match = all.find((c) => c.name.toLowerCase() === trimmed.toLowerCase())
+    if (match) {
+      ids.push(match.id)
+    } else {
+      console.warn(`[upsert] Skipping unknown category: "${trimmed}"`)
+    }
   }
   return ids
 }
@@ -173,7 +175,6 @@ async function resolveLocations(
     const country = loc.country.trim()
     if (!city || !country) continue
 
-    // Find existing by city+country (case-insensitive)
     const existing = await prisma.location.findFirst({
       where: {
         city: { equals: city, mode: 'insensitive' },
@@ -185,11 +186,7 @@ async function resolveLocations(
     if (existing) {
       ids.push(existing.id)
     } else {
-      const row = await prisma.location.create({
-        data: { city, country, state: loc.state?.trim() || null },
-        select: { id: true },
-      })
-      ids.push(row.id)
+      console.warn(`[upsert] Skipping unknown location: "${city}/${country}"`)
     }
   }
   return ids
