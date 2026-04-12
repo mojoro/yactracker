@@ -98,7 +98,11 @@ export async function fetchSource(
       raw_html_size,
     }
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e)
+    let message = e instanceof Error ? e.message : String(e)
+    // Node/undici wraps the real error in .cause
+    if (e instanceof Error && e.cause instanceof Error) {
+      message = `${message}: ${e.cause.message}`
+    }
     return { kind: 'fetch_error', http_status: null, message }
   } finally {
     clearTimeout(timer)
