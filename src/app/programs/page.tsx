@@ -105,6 +105,12 @@ function formatRating(avg: number | null, count: number): string {
   return `★ ${avg.toFixed(1)} (${count} review${count === 1 ? '' : 's'})`
 }
 
+function formatAppFee(n: number | null): string {
+  if (n === null) return '\u2014'
+  if (n === 0) return 'Free'
+  return `$${n.toLocaleString('en-US')}`
+}
+
 function cursorLink(params: SearchParams, newCursor: string | null): string {
   const qs = new URLSearchParams()
   const keys = [
@@ -114,14 +120,39 @@ function cursorLink(params: SearchParams, newCursor: string | null): string {
     'country',
     'offers_scholarship',
     'tuition_lower_than',
+    'app_fee',
     'sort',
     'limit',
+    'view',
   ]
   for (const k of keys) {
     const v = getString(params, k)
     if (v !== undefined && v !== '') qs.set(k, v)
   }
   if (newCursor) qs.set('cursor', newCursor)
+  const qsStr = qs.toString()
+  return qsStr ? `/programs?${qsStr}` : '/programs'
+}
+
+function viewLink(params: SearchParams, view: 'card' | 'list'): string {
+  const qs = new URLSearchParams()
+  const keys = [
+    'q',
+    'instrument_id',
+    'category_id',
+    'country',
+    'offers_scholarship',
+    'tuition_lower_than',
+    'app_fee',
+    'sort',
+    'limit',
+    'cursor',
+  ]
+  for (const k of keys) {
+    const v = getString(params, k)
+    if (v !== undefined && v !== '') qs.set(k, v)
+  }
+  if (view !== 'card') qs.set('view', view)
   const qsStr = qs.toString()
   return qsStr ? `/programs?${qsStr}` : '/programs'
 }
@@ -177,6 +208,13 @@ export default async function ProgramsPage({
   const offersScholarship = getString(params, 'offers_scholarship')
   if (offersScholarship === 'true') {
     andFilters.push({ offers_scholarship: true })
+  }
+
+  const appFee = getString(params, 'app_fee')
+  if (appFee === 'free') {
+    andFilters.push({ OR: [{ application_fee: null }, { application_fee: 0 }] })
+  } else if (appFee === 'paid') {
+    andFilters.push({ application_fee: { gt: 0 } })
   }
 
   const q = getString(params, 'q')
@@ -273,7 +311,9 @@ export default async function ProgramsPage({
   const currentCountry = getString(params, 'country') ?? ''
   const currentScholarship = getString(params, 'offers_scholarship') === 'true'
   const currentTuition = getString(params, 'tuition_lower_than') ?? ''
+  const currentAppFee = getString(params, 'app_fee') ?? ''
   const currentSort = sortParam
+  const currentView = getString(params, 'view') === 'list' ? 'list' : 'card'
 
   const hasPrev = meta.prev !== null
   const hasNext = meta.next !== null
@@ -421,6 +461,25 @@ export default async function ProgramsPage({
             </select>
           </div>
 
+          <div>
+            <label
+              htmlFor="app_fee"
+              className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5"
+            >
+              Application fee
+            </label>
+            <select
+              id="app_fee"
+              name="app_fee"
+              defaultValue={currentAppFee}
+              className="w-full rounded-lg border-0 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 focus:bg-white transition-colors"
+            >
+              <option value="">Any</option>
+              <option value="free">Free application</option>
+              <option value="paid">Has application fee</option>
+            </select>
+          </div>
+
           <div className="flex items-center pt-6">
             <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
               <input
@@ -434,6 +493,9 @@ export default async function ProgramsPage({
             </label>
           </div>
         </div>
+        {currentView !== 'card' && (
+          <input type="hidden" name="view" value={currentView} />
+        )}
 
         <div className="mt-5 flex items-center gap-4 border-t border-slate-100 pt-4">
           <button
@@ -451,6 +513,41 @@ export default async function ProgramsPage({
           <span className="ml-auto text-sm text-slate-400">
             {meta.total_items} result{meta.total_items === 1 ? '' : 's'}
           </span>
+          <div className="flex items-center rounded-lg ring-1 ring-slate-200 overflow-hidden">
+            <Link
+              href={viewLink(params, 'card')}
+              className={`inline-flex items-center px-2.5 py-2 transition-colors ${
+                currentView === 'card'
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-slate-500 hover:bg-slate-50'
+              }`}
+              aria-label="Card view"
+              title="Card view"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1" y="1" width="6" height="6" rx="1" fill="currentColor" />
+                <rect x="9" y="1" width="6" height="6" rx="1" fill="currentColor" />
+                <rect x="1" y="9" width="6" height="6" rx="1" fill="currentColor" />
+                <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" />
+              </svg>
+            </Link>
+            <Link
+              href={viewLink(params, 'list')}
+              className={`inline-flex items-center px-2.5 py-2 transition-colors ${
+                currentView === 'list'
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-slate-500 hover:bg-slate-50'
+              }`}
+              aria-label="List view"
+              title="List view"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1" y="1.5" width="14" height="2.5" rx="0.5" fill="currentColor" />
+                <rect x="1" y="6.75" width="14" height="2.5" rx="0.5" fill="currentColor" />
+                <rect x="1" y="12" width="14" height="2.5" rx="0.5" fill="currentColor" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </form>
 
@@ -472,11 +569,36 @@ export default async function ProgramsPage({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {programs.map((p) => (
-              <ProgramCard key={p.id} program={p} />
-            ))}
-          </div>
+          {currentView === 'list' ? (
+            <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left">
+                      <th className="px-4 py-3 font-semibold text-slate-700">Program</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">Location</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 hidden md:table-cell">Categories</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 text-right">Tuition</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 text-right">App fee</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 hidden lg:table-cell">Deadline</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700 text-right">Rating</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {programs.map((p) => (
+                      <ProgramRow key={p.id} program={p} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {programs.map((p) => (
+                <ProgramCard key={p.id} program={p} />
+              ))}
+            </div>
+          )}
 
           <nav className="mt-6 flex items-center justify-center gap-1">
             {hasPrev ? (
@@ -603,6 +725,10 @@ function ProgramCard({ program }: { program: Program }) {
             </span>
           )}
           <span className="mx-0.5 text-slate-300">|</span>
+          <span className="text-slate-500 whitespace-nowrap">
+            App fee: {formatAppFee(program.application_fee)}
+          </span>
+          <span className="mx-0.5 text-slate-300">|</span>
           <span className="text-slate-500">
             {formatDate(program.application_deadline)}
           </span>
@@ -624,5 +750,85 @@ function ProgramCard({ program }: { program: Program }) {
         </div>
       </div>
     </article>
+  )
+}
+
+function ProgramRow({ program }: { program: Program }) {
+  const locationText =
+    program.locations.length > 0
+      ? program.locations.map((l) => `${l.city}, ${l.country}`).join(' / ')
+      : 'TBD'
+
+  const shownCategories = program.categories.slice(0, 2)
+  const extraCategories = program.categories.length - shownCategories.length
+
+  const hasRating = program.review_count > 0 && program.average_rating !== null
+
+  return (
+    <tr className="hover:bg-slate-50 transition-colors">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/programs/${program.id}`}
+            className="font-medium text-slate-900 hover:text-brand-600 transition-colors"
+          >
+            {program.name}
+          </Link>
+          {program.offers_scholarship && (
+            <span className="rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold text-success-700">
+              Aid
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">
+        {locationText}
+      </td>
+      <td className="px-4 py-3 hidden md:table-cell">
+        {shownCategories.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {shownCategories.map((c) => (
+              <span
+                key={c.id}
+                className="rounded-full bg-tag-50 px-2 py-0.5 text-xs font-medium text-tag-700"
+              >
+                {c.name}
+              </span>
+            ))}
+            {extraCategories > 0 && (
+              <span className="rounded-full bg-tag-50 px-2 py-0.5 text-xs font-medium text-tag-700">
+                +{extraCategories}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-slate-400">{'\u2014'}</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right font-medium text-slate-900 whitespace-nowrap">
+        {formatTuition(program.tuition)}
+      </td>
+      <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">
+        {formatAppFee(program.application_fee)}
+      </td>
+      <td className="px-4 py-3 text-slate-500 hidden lg:table-cell whitespace-nowrap">
+        {formatDate(program.application_deadline)}
+      </td>
+      <td className="px-4 py-3 text-right whitespace-nowrap">
+        {hasRating ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="text-accent-500">&#9733;</span>
+            <span className="font-medium text-slate-700">
+              {program.average_rating!.toFixed(1)}
+            </span>
+            <span className="text-slate-400">
+              ({program.review_count})
+            </span>
+          </span>
+        ) : (
+          <span className="text-slate-400">No reviews</span>
+        )}
+      </td>
+    </tr>
   )
 }
