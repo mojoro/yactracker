@@ -13,6 +13,7 @@ datasource db {
 model Program {
   id                   String   @id @default(uuid())
   name                 String
+  slug                 String   @unique
   description          String?
   start_date           DateTime? @db.Date
   end_date             DateTime? @db.Date
@@ -29,6 +30,8 @@ model Program {
 
   reviews               Review[]
   auditions             Audition[]
+  reports               Report[]
+  revisions             ProgramRevision[]
   program_instruments   ProgramInstrument[]
   program_categories    ProgramCategory[]
   program_locations     ProgramLocation[]
@@ -51,6 +54,7 @@ model Review {
   updated_at     DateTime @updatedAt
 
   program        Program  @relation(fields: [program_id], references: [id])
+  reports        Report[]
 
   @@map("review")
 }
@@ -205,6 +209,46 @@ model Subscriber {
   subscribed_at DateTime @default(now())
 
   @@map("subscriber")
+}
+
+// ---------------------------------------------------------------------------
+// Program edit history (Wikipedia-style versioning)
+// ---------------------------------------------------------------------------
+
+model ProgramRevision {
+  id          String   @id @default(uuid())
+  program_id  String
+  data        Json
+  edit_summary String?
+  created_at  DateTime @default(now())
+
+  program     Program  @relation(fields: [program_id], references: [id])
+
+  @@index([program_id, created_at])
+  @@map("program_revision")
+}
+
+// ---------------------------------------------------------------------------
+// Reports (user-submitted flags for inaccurate data or inappropriate content)
+// ---------------------------------------------------------------------------
+
+model Report {
+  id             String   @id @default(uuid())
+  program_id     String?
+  review_id      String?
+  report_type    String   // inaccurate_data | inappropriate_content | other
+  description    String
+  reporter_email String?
+  status         String   @default("pending") // pending | reviewed | resolved | dismissed
+  admin_notes    String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  program        Program? @relation(fields: [program_id], references: [id])
+  review         Review?  @relation(fields: [review_id], references: [id])
+
+  @@index([status, created_at])
+  @@map("report")
 }
 
 // ---------------------------------------------------------------------------
