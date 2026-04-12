@@ -114,16 +114,26 @@ export async function runScrape(
     }
 
     const results = { success: 0, unchanged: 0, error: 0 }
+    const errors: string[] = []
     for (const source of sources) {
-      const r = await runFetchForSource(source, { extract: true })
-      if (r.result === 'success') results.success++
-      else if (r.result === 'unchanged') results.unchanged++
-      else results.error++
+      try {
+        const r = await runFetchForSource(source, { extract: true })
+        if (r.result === 'success') results.success++
+        else if (r.result === 'unchanged') results.unchanged++
+        else {
+          results.error++
+          errors.push(`${source.name}: ${r.result}`)
+        }
+      } catch (e) {
+        results.error++
+        errors.push(`${source.name}: ${e instanceof Error ? e.message : String(e)}`)
+      }
     }
 
     revalidatePath('/admin/import')
+    const summary = `Done: ${results.success} new, ${results.unchanged} unchanged, ${results.error} errors.`
     return {
-      summary: `Done: ${results.success} new, ${results.unchanged} unchanged, ${results.error} errors.`,
+      summary: errors.length > 0 ? `${summary}\n${errors.join('\n')}` : summary,
     }
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) }

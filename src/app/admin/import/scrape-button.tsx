@@ -19,7 +19,7 @@ export function ScrapeButton() {
         <p className="mt-1 text-xs text-red-600">{state.error}</p>
       )}
       {state?.summary && (
-        <p className="mt-1 text-xs text-gray-600">{state.summary}</p>
+        <p className="mt-1 whitespace-pre-line text-xs text-gray-600">{state.summary}</p>
       )}
     </form>
   )
