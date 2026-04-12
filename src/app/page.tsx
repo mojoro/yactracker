@@ -58,9 +58,9 @@ export default async function Home() {
             Find and review young artist programs in classical music and opera
           </h1>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-            YACTracker is a directory where singers and instrumentalists can
-            browse summer festivals, academies, and young artist programs — and
-            share honest reviews from past participants.
+            YACTracker is a Young Artist Community where singers and
+            instrumentalists browse summer festivals, academies, and young
+            artist programs — and share honest reviews from past participants.
           </p>
         </div>
         <form
