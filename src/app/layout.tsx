@@ -64,6 +64,12 @@ export default function RootLayout({
                 >
                   Programs
                 </Link>
+                <Link
+                  href="/programs/new"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                >
+                  Submit a Program
+                </Link>
               </nav>
             </div>
           </div>

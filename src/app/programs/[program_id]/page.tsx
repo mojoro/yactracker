@@ -416,7 +416,18 @@ export default async function ProgramDetailPage({
 
       {/* Auditions */}
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-slate-900">Auditions</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Auditions</h2>
+          <Link
+            href={`/programs/${program_id}/auditions/new`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add audition
+          </Link>
+        </div>
         {auditions.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">No scheduled auditions.</p>
         ) : (
