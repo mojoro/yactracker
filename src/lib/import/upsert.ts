@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { toSlug } from '@/lib/slug'
 import type { ExtractedProgram } from './extractor'
 
 /**
@@ -20,6 +21,16 @@ export async function upsertProgramFromExtraction(
     resolveCategories(extracted.categories),
     resolveLocations(extracted.locations),
   ])
+
+  // Generate unique slug for new programs
+  let slug = toSlug(extracted.name)
+  if (!existingProgramId) {
+    const conflict = await prisma.program.findUnique({ where: { slug }, select: { id: true } })
+    if (conflict) {
+      const count = await prisma.program.count({ where: { slug: { startsWith: slug } } })
+      slug = `${slug}-${count + 1}`
+    }
+  }
 
   const programData = {
     name: extracted.name,
@@ -91,7 +102,7 @@ export async function upsertProgramFromExtraction(
   // Create new program with joins
   const program = await prisma.$transaction(async (tx) => {
     const p = await tx.program.create({
-      data: programData,
+      data: { ...programData, slug },
       select: { id: true },
     })
 

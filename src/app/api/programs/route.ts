@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { badRequest, internalError, validationError } from '@/lib/problem'
 import { buildMeta, parsePagination } from '@/lib/pagination'
 import { parseSort, toPrismaOrderBy } from '@/lib/sort'
+import { toSlug } from '@/lib/slug'
 
 // ---------------------------------------------------------------------------
 // Types & helpers
@@ -31,6 +32,7 @@ function formatProgram(
   const avg = stats?._avg.rating ?? null
   return {
     id: program.id,
+    slug: program.slug,
     name: program.name,
     description: program.description,
     start_date: program.start_date ? program.start_date.toISOString() : null,
@@ -256,9 +258,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
+    // Generate unique slug
+    const trimmedName = name.trim()
+    let slug = toSlug(trimmedName)
+    const conflict = await prisma.program.findUnique({ where: { slug }, select: { id: true } })
+    if (conflict) {
+      const count = await prisma.program.count({ where: { slug: { startsWith: slug } } })
+      slug = `${slug}-${count + 1}`
+    }
+
     const program = await prisma.program.create({
       data: {
-        name: name.trim(),
+        name: trimmedName,
+        slug,
         ...dataResult.data,
         program_instruments:
           instrumentIds && instrumentIds.length > 0
@@ -296,13 +308,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 // ---------------------------------------------------------------------------
 
 interface ParsedProgramData {
-  data: Omit<Prisma.ProgramUncheckedCreateInput, 'name'>
+  data: Omit<Prisma.ProgramUncheckedCreateInput, 'name' | 'slug'>
 }
 
 function buildProgramData(
   raw: Record<string, unknown>,
 ): ParsedProgramData | { error: NextResponse } {
-  const data: Omit<Prisma.ProgramUncheckedCreateInput, 'name'> = {}
+  const data: Omit<Prisma.ProgramUncheckedCreateInput, 'name' | 'slug'> = {}
 
   if ('description' in raw) {
     if (raw.description !== null && typeof raw.description !== 'string') {

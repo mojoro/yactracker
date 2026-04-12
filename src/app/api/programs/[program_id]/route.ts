@@ -29,6 +29,7 @@ function formatProgram(
   const avg = stats?._avg.rating ?? null
   return {
     id: program.id,
+    slug: program.slug,
     name: program.name,
     description: program.description,
     start_date: program.start_date ? program.start_date.toISOString() : null,
