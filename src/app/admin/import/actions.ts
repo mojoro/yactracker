@@ -70,6 +70,45 @@ export async function rejectCandidate(formData: FormData) {
   revalidatePath('/admin/import')
 }
 
+export interface UpdateCandidateState {
+  message?: string
+  error?: string
+}
+
+/**
+ * Update a ProgramCandidate's extracted_json.
+ */
+export async function updateCandidate(
+  _prev: UpdateCandidateState | null,
+  formData: FormData,
+): Promise<UpdateCandidateState> {
+  const candidateId = formData.get('candidate_id') as string
+  const rawJson = formData.get('extracted_json') as string
+  if (!candidateId) return { error: 'Missing candidate_id' }
+  if (!rawJson) return { error: 'Missing JSON' }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawJson)
+  } catch {
+    return { error: 'Invalid JSON syntax' }
+  }
+
+  const result = extractedProgramSchema.safeParse(parsed)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
+    return { error: `Validation: ${issues.join(', ')}` }
+  }
+
+  await prisma.programCandidate.update({
+    where: { id: candidateId },
+    data: { extracted_json: result.data as object },
+  })
+
+  revalidatePath('/admin/import')
+  return { message: 'Saved.' }
+}
+
 export interface AddSourceState {
   error?: string
 }

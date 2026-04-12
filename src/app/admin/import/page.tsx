@@ -6,6 +6,7 @@ import { approveCandidate, rejectCandidate } from './actions'
 import { ScrapeButton } from './scrape-button'
 import { AddSourceForm } from './add-source-form'
 import { ReExtractButton } from './re-extract-button'
+import { CandidateEditor } from './candidate-editor'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -435,6 +436,7 @@ function CandidateCard({
               Reject
             </button>
           </form>
+          <CandidateEditor candidateId={candidateId} extracted={extracted} />
         </div>
       )}
     </article>
