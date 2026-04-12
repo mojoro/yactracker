@@ -5,7 +5,7 @@ import { z } from 'zod'
 // ---------------------------------------------------------------------------
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-20250514'
+const DEFAULT_MODEL = 'anthropic/claude-haiku-4.5'
 
 function getApiKey(): string {
   const key = process.env.OPENROUTER_API_KEY
