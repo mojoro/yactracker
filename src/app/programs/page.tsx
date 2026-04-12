@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { parsePagination, buildMeta } from '@/lib/pagination'
+import { parsePagination, buildMeta, encodeCursor } from '@/lib/pagination'
 import { parseSort, toPrismaOrderBy } from '@/lib/sort'
 import type { Program } from '@/lib/types'
 
@@ -277,9 +277,12 @@ export default async function ProgramsPage({
 
   const hasPrev = meta.prev !== null
   const hasNext = meta.next !== null
+  const limit = pagination.limit
+  const currentPage = Math.floor(pagination.offset / limit)
+  const totalPages = Math.ceil(totalItems / limit)
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-10">
       <header className="py-8">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
           Programs
@@ -475,33 +478,47 @@ export default async function ProgramsPage({
             ))}
           </div>
 
-          <nav className="mt-10 flex items-center justify-between">
+          <nav className="mt-6 flex items-center justify-center gap-1">
             {hasPrev ? (
               <Link
                 href={cursorLink(params, meta.prev)}
-                className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/5 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 Previous
               </Link>
             ) : (
-              <span className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-slate-300 cursor-not-allowed">
+              <span className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-300">
                 Previous
               </span>
             )}
 
-            <span className="text-sm text-slate-400">
-              {totalItems} total
-            </span>
+            {Array.from({ length: totalPages }, (_, i) => {
+              const isActive = i === currentPage
+              const cursor = i === 0 ? null : encodeCursor({ offset: i * limit })
+              return (
+                <Link
+                  key={i}
+                  href={cursorLink(params, cursor)}
+                  className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-brand-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {i + 1}
+                </Link>
+              )
+            })}
 
             {hasNext ? (
               <Link
                 href={cursorLink(params, meta.next)}
-                className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/5 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 Next
               </Link>
             ) : (
-              <span className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-slate-300 cursor-not-allowed">
+              <span className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-300">
                 Next
               </span>
             )}
@@ -527,13 +544,7 @@ function ProgramCard({ program }: { program: Program }) {
   const hasRating = program.review_count > 0 && program.average_rating !== null
 
   return (
-    <article className="relative flex flex-col rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 transition hover:shadow-md hover:-translate-y-0.5">
-      {program.offers_scholarship && (
-        <span className="absolute top-4 right-4 rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-700">
-          Scholarship
-        </span>
-      )}
-
+    <article className="flex flex-col rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 transition hover:shadow-md hover:-translate-y-0.5">
       {shownCategories.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {shownCategories.map((c) => (
@@ -564,7 +575,7 @@ function ProgramCard({ program }: { program: Program }) {
       <p className="text-sm text-slate-500 mt-1">{locationText}</p>
 
       {shownInstruments.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <div className="mt-2.5 mb-1 flex flex-wrap gap-1.5">
           {shownInstruments.map((i) => (
             <span
               key={i.id}
@@ -582,11 +593,16 @@ function ProgramCard({ program }: { program: Program }) {
       )}
 
       <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-        <div className="text-sm">
+        <div className="flex items-center gap-1.5 text-sm">
           <span className="font-medium text-slate-900">
             {formatTuition(program.tuition)}
           </span>
-          <span className="mx-1.5 text-slate-300">|</span>
+          {program.offers_scholarship && (
+            <span className="rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold text-success-700">
+              Aid
+            </span>
+          )}
+          <span className="mx-0.5 text-slate-300">|</span>
           <span className="text-slate-500">
             {formatDate(program.application_deadline)}
           </span>
