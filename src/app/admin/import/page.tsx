@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { isAdminAuthenticated, adminLogout } from '../actions'
-import { approveCandidate, rejectCandidate } from './actions'
+import { approveCandidate, rejectCandidate, runScrape } from './actions'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -70,9 +70,19 @@ export default async function AdminImportPage({
             </form>
           </div>
         </div>
-        <p className="mt-1 text-sm text-gray-600">
-          Review extracted program candidates before they go live.
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Review extracted program candidates before they go live.
+          </p>
+          <form action={runScrape}>
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Run scrape
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* Status tabs */}

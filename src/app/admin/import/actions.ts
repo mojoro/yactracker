@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { extractedProgramSchema } from '@/lib/import/extractor'
 import { upsertProgramFromExtraction } from '@/lib/import/upsert'
+import { runFetchForSource } from '@/lib/import/run'
 
 /**
  * Approve a ProgramCandidate: upsert the program from extracted JSON,
@@ -63,6 +64,32 @@ export async function rejectCandidate(formData: FormData) {
       reviewer_notes: notes,
     },
   })
+
+  revalidatePath('/admin/import')
+}
+
+/**
+ * Run fetch+extract for all active ImportSources.
+ * Returns a summary string shown via the page's search params.
+ */
+export async function runScrape() {
+  const sources = await prisma.importSource.findMany({
+    where: { status: 'active' },
+    orderBy: { last_fetched_at: { sort: 'asc', nulls: 'first' } },
+  })
+
+  if (sources.length === 0) {
+    revalidatePath('/admin/import')
+    return
+  }
+
+  const results = { success: 0, unchanged: 0, error: 0 }
+  for (const source of sources) {
+    const r = await runFetchForSource(source, { extract: true })
+    if (r.result === 'success') results.success++
+    else if (r.result === 'unchanged') results.unchanged++
+    else results.error++
+  }
 
   revalidatePath('/admin/import')
 }
