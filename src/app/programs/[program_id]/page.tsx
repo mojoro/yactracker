@@ -476,6 +476,7 @@ export default async function ProgramDetailPage({
         <h2 className="text-lg font-semibold text-slate-900">Share your experience</h2>
         <form action={submitReview} className="mt-5">
           <input type="hidden" name="program_id" value={program_id} />
+          <input type="text" name="url_confirm" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>

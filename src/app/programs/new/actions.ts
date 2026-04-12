@@ -54,13 +54,45 @@ export async function createProgram(
     return Number.isNaN(d.getTime()) ? null : d
   }
 
+  // Honeypot
+  if (str('url_confirm')) return { error: '' }
+
   const name = str('name')
   if (!name) return { error: 'Program name is required.' }
+  if (name.length > 200) return { error: 'Program name is too long (max 200 characters).' }
+
+  const description = str('description')
+  if (description && description.length > 5000) return { error: 'Description is too long (max 5000 characters).' }
+
+  const tuition = num('tuition')
+  if (tuition !== null && tuition < 0) return { error: 'Tuition cannot be negative.' }
+
+  const applicationFee = num('application_fee')
+  if (applicationFee !== null && applicationFee < 0) return { error: 'Application fee cannot be negative.' }
+
+  const ageMin = int('age_min')
+  const ageMax = int('age_max')
+  if (ageMin !== null && (ageMin < 0 || ageMin > 100)) return { error: 'Age min must be between 0 and 100.' }
+  if (ageMax !== null && (ageMax < 0 || ageMax > 100)) return { error: 'Age max must be between 0 and 100.' }
+  if (ageMin !== null && ageMax !== null && ageMin > ageMax) return { error: 'Age min cannot exceed age max.' }
+
+  const programUrl = str('program_url')
+  const applicationUrl = str('application_url')
+  const urlPattern = /^https?:\/\//
+  if (programUrl && !urlPattern.test(programUrl)) return { error: 'Program URL must start with http:// or https://.' }
+  if (applicationUrl && !urlPattern.test(applicationUrl)) return { error: 'Application URL must start with http:// or https://.' }
+  if (programUrl && programUrl.length > 2000) return { error: 'Program URL is too long.' }
+  if (applicationUrl && applicationUrl.length > 2000) return { error: 'Application URL is too long.' }
 
   // Parse combobox selections
   const instrumentItems = parseComboboxItems(formData.get('instruments') as string)
   const categoryItems = parseComboboxItems(formData.get('categories') as string)
   const locationItems = parseComboboxItems(formData.get('locations') as string)
+
+  for (const item of [...instrumentItems, ...categoryItems, ...locationItems]) {
+    if (!item.name.trim()) return { error: 'Empty names are not allowed.' }
+    if (item.name.length > 100) return { error: `Name too long: "${item.name.slice(0, 30)}..." (max 100 characters).` }
+  }
 
   let programId: string
 
@@ -161,17 +193,17 @@ export async function createProgram(
       const prog = await tx.program.create({
         data: {
           name,
-          description: str('description'),
+          description,
           start_date: date('start_date'),
           end_date: date('end_date'),
           application_deadline: date('application_deadline'),
-          tuition: num('tuition'),
-          application_fee: num('application_fee'),
-          age_min: int('age_min'),
-          age_max: int('age_max'),
+          tuition,
+          application_fee: applicationFee,
+          age_min: ageMin,
+          age_max: ageMax,
           offers_scholarship: formData.get('offers_scholarship') === 'true',
-          program_url: str('program_url'),
-          application_url: str('application_url'),
+          program_url: programUrl,
+          application_url: applicationUrl,
         },
         select: { id: true },
       })

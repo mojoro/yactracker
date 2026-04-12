@@ -18,6 +18,8 @@ export function ProgramForm({ instruments, categories, locations }: Props) {
 
   return (
     <form action={formAction}>
+      <input type="text" name="url_confirm" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
+
       {state?.error && (
         <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
           {state.error}

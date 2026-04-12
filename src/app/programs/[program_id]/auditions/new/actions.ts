@@ -36,6 +36,11 @@ export async function createAudition(
   _prev: CreateAuditionState | null,
   formData: FormData,
 ): Promise<CreateAuditionState> {
+  const str = (k: string) => (formData.get(k) as string)?.trim() || null
+
+  // Honeypot
+  if (str('url_confirm')) return { error: '' }
+
   const programId = formData.get('program_id') as string
   if (!programId) return { error: 'Missing program ID.' }
 
@@ -46,13 +51,22 @@ export async function createAudition(
   })
   if (!program) return { error: 'Program not found.' }
 
-  const str = (k: string) => (formData.get(k) as string)?.trim() || null
   const num = (k: string) => {
     const v = str(k)
     if (v === null) return null
     const n = Number(v)
     return Number.isFinite(n) ? n : null
   }
+
+  const auditionFee = num('audition_fee')
+  if (auditionFee !== null && auditionFee < 0) return { error: 'Audition fee cannot be negative.' }
+
+  const instructions = str('instructions')
+  if (instructions && instructions.length > 5000) return { error: 'Instructions too long (max 5000 characters).' }
+
+  const registrationUrl = str('registration_url')
+  if (registrationUrl && !/^https?:\/\//.test(registrationUrl)) return { error: 'Registration URL must start with http:// or https://.' }
+  if (registrationUrl && registrationUrl.length > 2000) return { error: 'Registration URL is too long.' }
 
   // Location — required, single selection
   const locationItems = parseComboboxItems(formData.get('location') as string)
@@ -93,6 +107,10 @@ export async function createAudition(
 
   // Instruments
   const instrumentItems = parseComboboxItems(formData.get('instruments') as string)
+  for (const item of [...instrumentItems, locItem]) {
+    if (!item.name.trim()) return { error: 'Empty names are not allowed.' }
+    if (item.name.length > 100) return { error: `Name too long: "${item.name.slice(0, 30)}..." (max 100 characters).` }
+  }
   const instrumentIds: string[] = []
   for (const item of instrumentItems) {
     if (item.is_new) {
@@ -135,9 +153,9 @@ export async function createAudition(
           program_id: programId,
           location_id: locationId,
           time_slot: timeSlot,
-          audition_fee: num('audition_fee'),
-          instructions: str('instructions'),
-          registration_url: str('registration_url'),
+          audition_fee: auditionFee,
+          instructions,
+          registration_url: registrationUrl,
         },
         select: { id: true },
       })

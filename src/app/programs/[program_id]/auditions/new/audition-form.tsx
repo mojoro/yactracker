@@ -19,6 +19,7 @@ export function AuditionForm({ programId, instruments, locations }: Props) {
   return (
     <form action={formAction}>
       <input type="hidden" name="program_id" value={programId} />
+      <input type="text" name="url_confirm" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
 
       {state?.error && (
         <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">

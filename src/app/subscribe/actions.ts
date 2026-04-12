@@ -11,10 +11,17 @@ export async function subscribe(
   _prev: SubscribeState | null,
   formData: FormData,
 ): Promise<SubscribeState> {
+  // Honeypot
+  const honeypot = (formData.get('url_confirm') as string)?.trim()
+  if (honeypot) return { message: "You're on the list! We'll be in touch." }
+
   const email = (formData.get('email') as string)?.trim().toLowerCase()
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: 'Please enter a valid email address.' }
+  }
+  if (email.length > 254) {
+    return { error: 'Email address is too long.' }
   }
 
   try {
