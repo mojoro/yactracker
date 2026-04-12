@@ -1,12 +1,14 @@
 import type { ImportSource } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { fetchSource, type FetchResult } from './fetcher'
+import { extractProgram, type ExtractionResult } from './extractor'
 
 export interface RunSourceResult {
   import_run_id: string
   source_id: string
   result: 'success' | 'unchanged' | 'fetch_error' | 'extraction_error'
   fetch: FetchResult
+  extraction?: ExtractionResult
 }
 
 /**
@@ -15,9 +17,13 @@ export interface RunSourceResult {
  * - On `unchanged`, raw_html_gz is null to save storage.
  * - On `success`, raw_html_gz holds the gzipped body and the source's
  *   last_fetched_at + last_content_hash are updated.
- * - Extraction (Phase 5C) runs in a later step against successful runs.
+ * - When `extract` is true and fetch succeeds, runs the LLM extractor and
+ *   records model/token usage on the ImportRun row.
  */
-export async function runFetchForSource(source: ImportSource): Promise<RunSourceResult> {
+export async function runFetchForSource(
+  source: ImportSource,
+  opts?: { extract?: boolean },
+): Promise<RunSourceResult> {
   const started_at = new Date()
   const fetch = await fetchSource(source.url, source.last_content_hash)
 
@@ -46,6 +52,27 @@ export async function runFetchForSource(source: ImportSource): Promise<RunSource
         last_content_hash: fetch.content_hash,
       },
     })
+
+    // Optional LLM extraction on successful fetch
+    if (opts?.extract) {
+      const extraction = await extractProgram(fetch.raw_html)
+      await prisma.importRun.update({
+        where: { id: run.id },
+        data: {
+          extraction_model: extraction.model,
+          extraction_tokens_in: extraction.tokens_in,
+          extraction_tokens_out: extraction.tokens_out,
+          ...(extraction.kind === 'error' && {
+            result: 'extraction_error',
+            error_message: extraction.message,
+          }),
+        },
+      })
+
+      const result = extraction.kind === 'error' ? 'extraction_error' as const : 'success' as const
+      return { import_run_id: run.id, source_id: source.id, result, fetch, extraction }
+    }
+
     return { import_run_id: run.id, source_id: source.id, result: 'success', fetch }
   }
 
