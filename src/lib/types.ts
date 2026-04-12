@@ -18,6 +18,15 @@ export interface Instrument {
   name: string
 }
 
+/** Sort instruments alphabetically with "Voice" pinned first. */
+export function sortInstruments<T extends { name: string }>(items: T[]): T[] {
+  return items.toSorted((a, b) => {
+    if (a.name === 'Voice') return -1
+    if (b.name === 'Voice') return 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export interface Category {
   id: string
   name: string

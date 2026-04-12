@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { sortInstruments } from '@/lib/types'
 import { ProgramForm } from './program-form'
 
 export const metadata = {
@@ -44,7 +45,7 @@ export default async function NewProgramPage() {
 
       <div className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
         <ProgramForm
-          instruments={instruments}
+          instruments={sortInstruments(instruments)}
           categories={categories}
           locations={locationOptions}
         />

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { sortInstruments } from '@/lib/types'
 import { AuditionForm } from './audition-form'
 
 export async function generateMetadata({
@@ -68,7 +69,7 @@ export default async function NewAuditionPage({
       <div className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
         <AuditionForm
           programId={program.id}
-          instruments={instruments}
+          instruments={sortInstruments(instruments)}
           locations={locationOptions}
         />
       </div>

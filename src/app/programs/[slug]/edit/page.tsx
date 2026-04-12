@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { sortInstruments } from '@/lib/types'
 import { EditProgramForm } from './edit-form'
 
 export async function generateMetadata({
@@ -101,7 +102,7 @@ export default async function EditProgramPage({
       <div className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
         <EditProgramForm
           program={program}
-          allInstruments={allInstruments}
+          allInstruments={sortInstruments(allInstruments)}
           allCategories={allCategories}
           allLocations={locationOptions}
         />

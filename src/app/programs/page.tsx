@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { parsePagination, buildMeta, encodeCursor } from '@/lib/pagination'
 import { parseSort, toPrismaOrderBy } from '@/lib/sort'
-import type { Program } from '@/lib/types'
+import { type Program, sortInstruments } from '@/lib/types'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -299,7 +299,7 @@ export default async function ProgramsPage({
     }),
   ])
 
-  const instruments = allInstruments.filter((i) => usedInstrumentIds.has(i.id))
+  const instruments = sortInstruments(allInstruments.filter((i) => usedInstrumentIds.has(i.id)))
   const categories = allCategories.filter((c) => usedCategoryIds.has(c.id))
   const countries = allLocations
     .map((l) => l.country)
