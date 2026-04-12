@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { buildQuery, listCategories, listPrograms } from '@/lib/api'
+import type { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import type { Program } from '@/lib/types'
 
 function formatTuition(n: number | null): string {
@@ -26,29 +27,106 @@ function formatLocations(program: Program): string {
   return program.locations.map((l) => `${l.city}, ${l.country}`).join(' · ')
 }
 
-export default async function Home() {
-  const today = new Date().toISOString().slice(0, 10)
+const PROGRAM_INCLUDE = {
+  program_instruments: { include: { instrument: true } },
+  program_categories: { include: { category: true } },
+  program_locations: { include: { location: true } },
+} as const
 
-  const [upcomingRes, categoriesRes] = await Promise.all([
-    listPrograms(
-      buildQuery({
-        limit: 6,
-        sort: 'application_deadline',
-        deadline_after: today,
-      }),
-    ),
-    listCategories(),
+type ProgramWithRelations = Prisma.ProgramGetPayload<{
+  include: typeof PROGRAM_INCLUDE
+}>
+
+function formatProgram(
+  row: ProgramWithRelations,
+  stats: { avg: number | null; count: number },
+): Program {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    start_date: row.start_date ? row.start_date.toISOString() : null,
+    end_date: row.end_date ? row.end_date.toISOString() : null,
+    application_deadline: row.application_deadline
+      ? row.application_deadline.toISOString()
+      : null,
+    tuition: row.tuition,
+    application_fee: row.application_fee,
+    age_min: row.age_min,
+    age_max: row.age_max,
+    offers_scholarship: row.offers_scholarship,
+    application_url: row.application_url,
+    program_url: row.program_url,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+    instruments: row.program_instruments.map((pi) => ({
+      id: pi.instrument.id,
+      name: pi.instrument.name,
+    })),
+    categories: row.program_categories.map((pc) => ({
+      id: pc.category.id,
+      name: pc.category.name,
+    })),
+    locations: row.program_locations.map((pl) => ({
+      id: pl.location.id,
+      city: pl.location.city,
+      country: pl.location.country,
+      state: pl.location.state,
+      address: pl.location.address,
+    })),
+    average_rating: stats.avg === null ? null : Math.round(stats.avg * 10) / 10,
+    review_count: stats.count,
+  }
+}
+
+async function attachRatingStats(
+  programs: ProgramWithRelations[],
+): Promise<Program[]> {
+  if (programs.length === 0) return []
+  const ids = programs.map((p) => p.id)
+  const grouped = await prisma.review.groupBy({
+    by: ['program_id'],
+    where: { program_id: { in: ids } },
+    _avg: { rating: true },
+    _count: { rating: true },
+  })
+  const statsMap = new Map(
+    grouped.map((g) => [g.program_id, { avg: g._avg.rating, count: g._count.rating }]),
+  )
+  return programs.map((p) =>
+    formatProgram(p, statsMap.get(p.id) ?? { avg: null, count: 0 }),
+  )
+}
+
+export default async function Home() {
+  const today = new Date()
+
+  const [upcomingRows, categoryRows] = await Promise.all([
+    prisma.program.findMany({
+      where: { application_deadline: { gte: today } },
+      orderBy: { application_deadline: 'asc' },
+      take: 6,
+      include: PROGRAM_INCLUDE,
+    }),
+    prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
   ])
 
-  let featured = upcomingRes.items
-  if (featured.length === 0) {
-    const fallback = await listPrograms(
-      buildQuery({ limit: 6, sort: '-created_at' }),
-    )
-    featured = fallback.items
+  let featured: Program[]
+  if (upcomingRows.length > 0) {
+    featured = await attachRatingStats(upcomingRows)
+  } else {
+    const fallbackRows = await prisma.program.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 6,
+      include: PROGRAM_INCLUDE,
+    })
+    featured = await attachRatingStats(fallbackRows)
   }
 
-  const categories = categoriesRes.items
+  const categories = categoryRows
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 space-y-12">

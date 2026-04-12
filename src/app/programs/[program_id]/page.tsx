@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getProgram, listProgramAuditions, listProgramReviews } from '@/lib/api'
+import type { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import type { Audition, Review } from '@/lib/types'
 import { submitReview } from './actions'
 
@@ -50,6 +51,72 @@ function formatAgeRange(min: number | null, max: number | null): string {
 function renderStars(rating: number): string {
   const r = Math.max(0, Math.min(5, Math.round(rating)))
   return '★'.repeat(r) + '☆'.repeat(5 - r)
+}
+
+const PROGRAM_INCLUDE = {
+  program_instruments: { include: { instrument: true } },
+  program_categories: { include: { category: true } },
+  program_locations: { include: { location: true } },
+} as const
+
+type ProgramWithRelations = Prisma.ProgramGetPayload<{
+  include: typeof PROGRAM_INCLUDE
+}>
+
+type AuditionWithRelations = Prisma.AuditionGetPayload<{
+  include: {
+    location: true
+    audition_instruments: { include: { instrument: true } }
+  }
+}>
+
+function formatAuditionRow(row: AuditionWithRelations): Audition {
+  return {
+    id: row.id,
+    program_id: row.program_id,
+    location_id: row.location_id,
+    location: {
+      id: row.location.id,
+      city: row.location.city,
+      country: row.location.country,
+      state: row.location.state,
+      address: row.location.address,
+    },
+    time_slot: row.time_slot ? row.time_slot.toISOString() : null,
+    audition_fee: row.audition_fee,
+    instructions: row.instructions,
+    registration_url: row.registration_url,
+    instruments: row.audition_instruments.map((ai) => ({
+      id: ai.instrument.id,
+      name: ai.instrument.name,
+    })),
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  }
+}
+
+function formatReviewRow(row: {
+  id: string
+  program_id: string
+  rating: number
+  year_attended: number | null
+  reviewer_name: string | null
+  title: string | null
+  body: string
+  created_at: Date
+  updated_at: Date
+}): Review {
+  return {
+    id: row.id,
+    program_id: row.program_id,
+    rating: row.rating,
+    year_attended: row.year_attended,
+    reviewer_name: row.reviewer_name,
+    title: row.title,
+    body: row.body,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  }
 }
 
 function KeyFact({ label, children }: { label: string; children: React.ReactNode }) {
@@ -133,16 +200,74 @@ export default async function ProgramDetailPage({
 }) {
   const { program_id } = await params
 
-  const program = await getProgram(program_id)
-  if (!program) notFound()
+  const programRow = await prisma.program.findUnique({
+    where: { id: program_id },
+    include: PROGRAM_INCLUDE,
+  })
+  if (!programRow) notFound()
 
-  const [reviewsRes, auditionsRes] = await Promise.all([
-    listProgramReviews(program_id, '?limit=50'),
-    listProgramAuditions(program_id, '?limit=50'),
+  const [ratingAgg, reviewRows, auditionRows] = await Promise.all([
+    prisma.review.aggregate({
+      where: { program_id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    }),
+    prisma.review.findMany({
+      where: { program_id },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    }),
+    prisma.audition.findMany({
+      where: { program_id },
+      orderBy: [{ time_slot: 'asc' }, { created_at: 'asc' }],
+      take: 50,
+      include: {
+        location: true,
+        audition_instruments: { include: { instrument: true } },
+      },
+    }),
   ])
 
-  const reviews = reviewsRes.items
-  const auditions = auditionsRes.items
+  const avgRaw = ratingAgg._avg.rating
+  const program = {
+    id: programRow.id,
+    name: programRow.name,
+    description: programRow.description,
+    start_date: programRow.start_date ? programRow.start_date.toISOString() : null,
+    end_date: programRow.end_date ? programRow.end_date.toISOString() : null,
+    application_deadline: programRow.application_deadline
+      ? programRow.application_deadline.toISOString()
+      : null,
+    tuition: programRow.tuition,
+    application_fee: programRow.application_fee,
+    age_min: programRow.age_min,
+    age_max: programRow.age_max,
+    offers_scholarship: programRow.offers_scholarship,
+    application_url: programRow.application_url,
+    program_url: programRow.program_url,
+    created_at: programRow.created_at.toISOString(),
+    updated_at: programRow.updated_at.toISOString(),
+    instruments: programRow.program_instruments.map((pi) => ({
+      id: pi.instrument.id,
+      name: pi.instrument.name,
+    })),
+    categories: programRow.program_categories.map((pc) => ({
+      id: pc.category.id,
+      name: pc.category.name,
+    })),
+    locations: programRow.program_locations.map((pl) => ({
+      id: pl.location.id,
+      city: pl.location.city,
+      country: pl.location.country,
+      state: pl.location.state,
+      address: pl.location.address,
+    })),
+    average_rating: avgRaw === null ? null : Math.round(avgRaw * 10) / 10,
+    review_count: ratingAgg._count.rating,
+  }
+
+  const reviews: Review[] = reviewRows.map(formatReviewRow)
+  const auditions: Audition[] = auditionRows.map(formatAuditionRow)
 
   const locationLabel = program.locations
     .map((l) => `${l.city}, ${l.country}`)

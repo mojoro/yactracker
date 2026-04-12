@@ -1,11 +1,8 @@
 import Link from 'next/link'
-import {
-  buildQuery,
-  listCategories,
-  listInstruments,
-  listLocations,
-  listPrograms,
-} from '@/lib/api'
+import type { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
+import { parsePagination, buildMeta } from '@/lib/pagination'
+import { parseSort, toPrismaOrderBy } from '@/lib/sort'
 import type { Program } from '@/lib/types'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
@@ -19,6 +16,65 @@ const SORT_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'tuition', label: 'Tuition (low→high)' },
   { value: '-tuition', label: 'Tuition (high→low)' },
 ]
+
+const ALLOWED_SORT_FIELDS = [
+  'name',
+  'tuition',
+  'application_deadline',
+  'created_at',
+] as const
+
+const PROGRAM_INCLUDE = {
+  program_instruments: { include: { instrument: true } },
+  program_categories: { include: { category: true } },
+  program_locations: { include: { location: true } },
+} as const
+
+type ProgramWithRelations = Prisma.ProgramGetPayload<{
+  include: typeof PROGRAM_INCLUDE
+}>
+
+function formatProgram(
+  row: ProgramWithRelations,
+  stats: { avg: number | null; count: number },
+): Program {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    start_date: row.start_date ? row.start_date.toISOString() : null,
+    end_date: row.end_date ? row.end_date.toISOString() : null,
+    application_deadline: row.application_deadline
+      ? row.application_deadline.toISOString()
+      : null,
+    tuition: row.tuition,
+    application_fee: row.application_fee,
+    age_min: row.age_min,
+    age_max: row.age_max,
+    offers_scholarship: row.offers_scholarship,
+    application_url: row.application_url,
+    program_url: row.program_url,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+    instruments: row.program_instruments.map((pi) => ({
+      id: pi.instrument.id,
+      name: pi.instrument.name,
+    })),
+    categories: row.program_categories.map((pc) => ({
+      id: pc.category.id,
+      name: pc.category.name,
+    })),
+    locations: row.program_locations.map((pl) => ({
+      id: pl.location.id,
+      city: pl.location.city,
+      country: pl.location.country,
+      state: pl.location.state,
+      address: pl.location.address,
+    })),
+    average_rating: stats.avg === null ? null : Math.round(stats.avg * 10) / 10,
+    review_count: stats.count,
+  }
+}
 
 function getString(params: SearchParams, key: string): string | undefined {
   const v = params[key]
@@ -70,6 +126,14 @@ function cursorLink(params: SearchParams, newCursor: string | null): string {
   return qsStr ? `/programs?${qsStr}` : '/programs'
 }
 
+function parseCsvUuids(value: string | undefined): string[] {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
 export default async function ProgramsPage({
   searchParams,
 }: {
@@ -77,42 +141,128 @@ export default async function ProgramsPage({
 }) {
   const params = await searchParams
 
-  const query = buildQuery({
-    q: getString(params, 'q'),
-    instrument_id: getString(params, 'instrument_id'),
-    category_id: getString(params, 'category_id'),
-    country: getString(params, 'country'),
-    offers_scholarship: getString(params, 'offers_scholarship'),
-    tuition_lower_than: getString(params, 'tuition_lower_than'),
-    sort: getString(params, 'sort') ?? '-created_at',
-    cursor: getString(params, 'cursor'),
-    limit: getString(params, 'limit') ?? '12',
+  // --- Build Prisma where clause (mirrors GET /api/programs) ---
+  const where: Prisma.ProgramWhereInput = {}
+  const andFilters: Prisma.ProgramWhereInput[] = []
+
+  const instrumentIds = parseCsvUuids(getString(params, 'instrument_id'))
+  if (instrumentIds.length > 0) {
+    andFilters.push({
+      program_instruments: { some: { instrument_id: { in: instrumentIds } } },
+    })
+  }
+
+  const categoryIds = parseCsvUuids(getString(params, 'category_id'))
+  if (categoryIds.length > 0) {
+    andFilters.push({
+      program_categories: { some: { category_id: { in: categoryIds } } },
+    })
+  }
+
+  const country = getString(params, 'country')
+  if (country) {
+    andFilters.push({
+      program_locations: { some: { location: { country } } },
+    })
+  }
+
+  const tuitionLowerThan = getString(params, 'tuition_lower_than')
+  if (tuitionLowerThan !== undefined && tuitionLowerThan !== '') {
+    const n = Number.parseFloat(tuitionLowerThan)
+    if (Number.isFinite(n)) {
+      andFilters.push({ tuition: { lte: n } })
+    }
+  }
+
+  const offersScholarship = getString(params, 'offers_scholarship')
+  if (offersScholarship === 'true') {
+    andFilters.push({ offers_scholarship: true })
+  }
+
+  const q = getString(params, 'q')
+  if (q) {
+    andFilters.push({
+      OR: [
+        { name: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ],
+    })
+  }
+
+  if (andFilters.length > 0) {
+    where.AND = andFilters
+  }
+
+  // --- Sort + pagination ---
+  const sortParam = getString(params, 'sort') ?? '-created_at'
+  const orderBy = toPrismaOrderBy(parseSort(sortParam), ALLOWED_SORT_FIELDS, {
+    created_at: 'desc',
   })
 
-  const [programsRes, allProgramsRes, instrumentsRes, categoriesRes, locationsRes] =
-    await Promise.all([
-      listPrograms(query),
-      listPrograms(buildQuery({ limit: '100' })),
-      listInstruments(),
-      listCategories(),
-      listLocations(),
-    ])
+  const urlParams = new URLSearchParams()
+  const cursorParam = getString(params, 'cursor')
+  if (cursorParam) urlParams.set('cursor', cursorParam)
+  urlParams.set('limit', getString(params, 'limit') ?? '12')
+  const pagination = parsePagination(urlParams)
 
-  const { items: programs, meta } = programsRes
-  const allPrograms = allProgramsRes.items
+  // --- Fetch filtered programs + total count ---
+  const [programRows, totalItems] = await Promise.all([
+    prisma.program.findMany({
+      where,
+      orderBy,
+      skip: pagination.skip,
+      take: pagination.take,
+      include: PROGRAM_INCLUDE,
+    }),
+    prisma.program.count({ where }),
+  ])
+
+  // Attach rating stats
+  const programIds = programRows.map((p) => p.id)
+  const statsMap = new Map<string, { avg: number | null; count: number }>()
+  if (programIds.length > 0) {
+    const grouped = await prisma.review.groupBy({
+      by: ['program_id'],
+      where: { program_id: { in: programIds } },
+      _avg: { rating: true },
+      _count: { rating: true },
+    })
+    for (const g of grouped) {
+      statsMap.set(g.program_id, { avg: g._avg.rating, count: g._count.rating })
+    }
+  }
+  const programs: Program[] = programRows.map((p) =>
+    formatProgram(p, statsMap.get(p.id) ?? { avg: null, count: 0 }),
+  )
+  const meta = buildMeta(pagination, totalItems)
+
+  // --- Fetch "all programs" for filter dropdown options ---
+  const allProgramRows = await prisma.program.findMany({
+    take: 100,
+    include: PROGRAM_INCLUDE,
+  })
 
   const usedInstrumentIds = new Set<string>()
   const usedCategoryIds = new Set<string>()
   const usedCountries = new Set<string>()
-  for (const p of allPrograms) {
-    for (const i of p.instruments) usedInstrumentIds.add(i.id)
-    for (const c of p.categories) usedCategoryIds.add(c.id)
-    for (const l of p.locations) usedCountries.add(l.country)
+  for (const p of allProgramRows) {
+    for (const pi of p.program_instruments) usedInstrumentIds.add(pi.instrument.id)
+    for (const pc of p.program_categories) usedCategoryIds.add(pc.category.id)
+    for (const pl of p.program_locations) usedCountries.add(pl.location.country)
   }
 
-  const instruments = instrumentsRes.items.filter((i) => usedInstrumentIds.has(i.id))
-  const categories = categoriesRes.items.filter((c) => usedCategoryIds.has(c.id))
-  const countries = locationsRes.items
+  const [allInstruments, allCategories, allLocations] = await Promise.all([
+    prisma.instrument.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.category.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.location.findMany({
+      orderBy: [{ country: 'asc' }, { city: 'asc' }],
+      select: { id: true, city: true, country: true, state: true, address: true },
+    }),
+  ])
+
+  const instruments = allInstruments.filter((i) => usedInstrumentIds.has(i.id))
+  const categories = allCategories.filter((c) => usedCategoryIds.has(c.id))
+  const countries = allLocations
     .map((l) => l.country)
     .filter((c, idx, arr) => usedCountries.has(c) && arr.indexOf(c) === idx)
     .sort()
@@ -123,9 +273,8 @@ export default async function ProgramsPage({
   const currentCountry = getString(params, 'country') ?? ''
   const currentScholarship = getString(params, 'offers_scholarship') === 'true'
   const currentTuition = getString(params, 'tuition_lower_than') ?? ''
-  const currentSort = getString(params, 'sort') ?? '-created_at'
+  const currentSort = sortParam
 
-  const totalItems = meta.total_items
   const hasPrev = meta.prev !== null
   const hasNext = meta.next !== null
 
