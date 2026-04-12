@@ -85,6 +85,13 @@ export default async function AdminImportPage({
               Data
             </Link>
             <Link
+              href="/admin/reports"
+              prefetch={false}
+              className="text-sm text-gray-600 hover:text-gray-900 underline"
+            >
+              Reports
+            </Link>
+            <Link
               href="/"
               prefetch={false}
               className="text-sm text-gray-600 hover:text-gray-900 underline"
