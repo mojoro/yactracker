@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { isAdminAuthenticated, adminLogout } from '../actions'
-import { approveCandidate, rejectCandidate } from './actions'
+import { approveCandidate, rejectCandidate, reExtractSource } from './actions'
 import { ScrapeButton } from './scrape-button'
 import { AddSourceForm } from './add-source-form'
 
@@ -161,7 +161,8 @@ export default async function AdminImportPage({
                   <th className="pb-2 pr-4">URL</th>
                   <th className="pb-2 pr-4">Status</th>
                   <th className="pb-2 pr-4">Linked program</th>
-                  <th className="pb-2">Last fetched</th>
+                  <th className="pb-2 pr-4">Last fetched</th>
+                  <th className="pb-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -196,10 +197,21 @@ export default async function AdminImportPage({
                         </Link>
                       ) : '—'}
                     </td>
-                    <td className="py-2 text-gray-500">
+                    <td className="py-2 pr-4 text-gray-500">
                       {s.last_fetched_at
                         ? s.last_fetched_at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'Never'}
+                    </td>
+                    <td className="py-2">
+                      <form action={reExtractSource}>
+                        <input type="hidden" name="source_id" value={s.id} />
+                        <button
+                          type="submit"
+                          className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                        >
+                          Re-extract
+                        </button>
+                      </form>
                     </td>
                   </tr>
                 ))}

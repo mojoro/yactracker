@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { extractedProgramSchema } from '@/lib/import/extractor'
+import { extractProgram, extractedProgramSchema } from '@/lib/import/extractor'
 import { upsertProgramFromExtraction } from '@/lib/import/upsert'
+import { createCandidate } from '@/lib/import/candidate'
 import { runFetchForSource } from '@/lib/import/run'
+import { gunzipSync } from 'node:zlib'
 
 /**
  * Approve a ProgramCandidate: upsert the program from extracted JSON,
@@ -106,6 +108,49 @@ export async function addSource(
 
   revalidatePath('/admin/import')
   return {}
+}
+
+/**
+ * Re-run LLM extraction on a source's latest stored HTML.
+ * Useful when fetch succeeded but extraction failed or was skipped.
+ */
+export async function reExtractSource(formData: FormData) {
+  const sourceId = formData.get('source_id') as string
+  if (!sourceId) throw new Error('Missing source_id')
+
+  const run = await prisma.importRun.findFirst({
+    where: {
+      import_source_id: sourceId,
+      result: { in: ['success', 'extraction_error'] },
+      raw_html_gz: { not: null },
+    },
+    orderBy: { started_at: 'desc' },
+    select: { id: true, raw_html_gz: true },
+  })
+
+  if (!run || !run.raw_html_gz) {
+    throw new Error('No stored HTML found for this source. Run a fresh scrape first.')
+  }
+
+  const html = gunzipSync(Buffer.from(run.raw_html_gz)).toString('utf8')
+  const extraction = await extractProgram(html)
+
+  await prisma.importRun.update({
+    where: { id: run.id },
+    data: {
+      extraction_model: extraction.model,
+      extraction_tokens_in: extraction.tokens_in,
+      extraction_tokens_out: extraction.tokens_out,
+      result: extraction.kind === 'success' ? 'success' : 'extraction_error',
+      error_message: extraction.kind === 'error' ? extraction.message : null,
+    },
+  })
+
+  if (extraction.kind === 'success') {
+    await createCandidate(extraction, sourceId, run.id)
+  }
+
+  revalidatePath('/admin/import')
 }
 
 export interface ScrapeState {
