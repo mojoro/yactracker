@@ -1122,6 +1122,89 @@ async function main() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Import sources — canonical URLs for the scraping pipeline
+  // ---------------------------------------------------------------------------
+
+  const importSources = [
+    {
+      name: 'Salzburg Festival Young Singers Project',
+      url: 'https://www.salzburgfestival.at/young-singers-project',
+      program_id: '10000000-0000-0000-0000-000000000001',
+    },
+    {
+      name: 'Aspen Music Festival and School',
+      url: 'https://www.aspenmusicfestival.com/school/',
+      program_id: '10000000-0000-0000-0000-000000000002',
+    },
+    {
+      name: 'Tanglewood Music Center',
+      url: 'https://www.bso.org/tanglewood/tmc',
+      program_id: '10000000-0000-0000-0000-000000000003',
+    },
+    {
+      name: 'Santa Fe Opera Apprentice Program',
+      url: 'https://www.santafeopera.org/about/apprentice-singers',
+      program_id: '10000000-0000-0000-0000-000000000004',
+    },
+    {
+      name: 'Glyndebourne Young Artists Programme',
+      url: 'https://www.glyndebourne.com/discover/young-artists/',
+      program_id: '10000000-0000-0000-0000-000000000005',
+    },
+    {
+      name: "Académie du Festival d'Aix",
+      url: 'https://festival-aix.com/en/academie',
+      program_id: '10000000-0000-0000-0000-000000000006',
+    },
+    {
+      name: 'Spoleto Festival dei Due Mondi — Accademia',
+      url: 'https://www.festivaldispoleto.com/en/',
+      program_id: '10000000-0000-0000-0000-000000000007',
+    },
+    {
+      name: 'Banff Centre — Evolution: Classical',
+      url: 'https://www.banffcentre.ca/programs/evolution-classical',
+      program_id: '10000000-0000-0000-0000-000000000008',
+    },
+    {
+      name: 'Ravinia Steans Music Institute',
+      url: 'https://www.ravinia.org/page/steans',
+      program_id: '10000000-0000-0000-0000-000000000009',
+    },
+    {
+      name: 'Brevard Music Center Summer Institute',
+      url: 'https://www.brevardmusic.org/summer-institute',
+      program_id: '10000000-0000-0000-0000-000000000010',
+    },
+    {
+      name: 'Merola Opera Program',
+      url: 'https://merola.org/',
+      program_id: '10000000-0000-0000-0000-000000000011',
+    },
+    {
+      name: 'AIMS Summer Vocal Academy',
+      url: 'https://www.aims.co.at/',
+      program_id: '10000000-0000-0000-0000-000000000012',
+    },
+  ]
+
+  for (const source of importSources) {
+    await prisma.importSource.upsert({
+      where: { url: source.url },
+      create: {
+        name: source.name,
+        url: source.url,
+        status: 'active',
+        program_id: source.program_id,
+      },
+      update: {
+        name: source.name,
+        program_id: source.program_id,
+      },
+    })
+  }
+
   const counts = {
     instruments: await prisma.instrument.count(),
     categories: await prisma.category.count(),
@@ -1133,6 +1216,7 @@ async function main() {
     program_categories: await prisma.programCategory.count(),
     program_locations: await prisma.programLocation.count(),
     audition_instruments: await prisma.auditionInstrument.count(),
+    import_sources: await prisma.importSource.count(),
   }
   console.log('Seed complete:', counts)
 }
