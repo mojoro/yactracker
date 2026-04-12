@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+.playwright-mcp/
+
+# local docs (not committed)
+/docs/
 
 # next.js
 /.next/
