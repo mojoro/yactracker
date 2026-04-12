@@ -53,6 +53,11 @@ export default async function AdminImportPage({
         status: true,
         last_fetched_at: true,
         program: { select: { id: true, name: true } },
+        runs: {
+          orderBy: { started_at: 'desc' },
+          take: 1,
+          select: { result: true, error_message: true },
+        },
       },
     }),
     prisma.program.findMany({
@@ -73,6 +78,7 @@ export default async function AdminImportPage({
           <div className="flex items-center gap-4">
             <Link
               href="/"
+              prefetch={false}
               className="text-sm text-gray-600 hover:text-gray-900 underline"
             >
               Back to site
@@ -101,6 +107,7 @@ export default async function AdminImportPage({
           <Link
             key={s}
             href={`/admin/import?status=${s}`}
+            prefetch={false}
             className={`rounded-md px-3 py-1.5 text-sm font-medium ${
               statusFilter === s
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -163,6 +170,7 @@ export default async function AdminImportPage({
                   <th className="pb-2 pr-4">Status</th>
                   <th className="pb-2 pr-4">Linked program</th>
                   <th className="pb-2 pr-4">Last fetched</th>
+                  <th className="pb-2 pr-4">Last run</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -193,15 +201,37 @@ export default async function AdminImportPage({
                     </td>
                     <td className="py-2 pr-4 text-gray-600">
                       {s.program ? (
-                        <Link href={`/programs/${s.program.id}`} className="text-blue-600 hover:underline">
+                        <a href={`/programs/${s.program.id}`} className="text-blue-600 hover:underline">
                           {s.program.name}
-                        </Link>
+                        </a>
                       ) : '—'}
                     </td>
                     <td className="py-2 pr-4 text-gray-500">
                       {s.last_fetched_at
                         ? s.last_fetched_at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'Never'}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {s.runs[0] ? (
+                        <div>
+                          <span className={`text-xs font-medium ${
+                            s.runs[0].result === 'success'
+                              ? 'text-green-700'
+                              : s.runs[0].result === 'unchanged'
+                                ? 'text-gray-500'
+                                : 'text-red-600'
+                          }`}>
+                            {s.runs[0].result}
+                          </span>
+                          {s.runs[0].error_message && (
+                            <p className="mt-0.5 text-xs text-red-500 max-w-xs truncate" title={s.runs[0].error_message}>
+                              {s.runs[0].error_message}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No runs</span>
+                      )}
                     </td>
                     <td className="py-2">
                       <ReExtractButton sourceId={s.id} />
@@ -287,12 +317,12 @@ function CandidateCard({
           {matchedProgram && (
             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
               Matches:{' '}
-              <Link
+              <a
                 href={`/programs/${matchedProgram.id}`}
                 className="underline"
               >
                 {matchedProgram.name}
-              </Link>
+              </a>
             </span>
           )}
         </div>
