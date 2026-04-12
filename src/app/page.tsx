@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { Program } from '@/lib/types'
+import { SubscribeForm } from './subscribe/subscribe-form'
 
 function formatTuition(n: number | null): string {
   if (n === null || n === 0) return 'Free'
@@ -291,6 +292,24 @@ export default async function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Mailing list CTA */}
+      <section className="pb-16 pt-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-xl bg-brand-50 p-8 sm:p-10">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+              Stay in the loop
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-slate-600">
+              Get notified about new programs, upcoming deadlines, and community
+              updates. No spam — just the good stuff.
+            </p>
+            <div className="mt-5 max-w-md">
+              <SubscribeForm variant="light" />
+            </div>
+          </div>
         </div>
       </section>
     </>

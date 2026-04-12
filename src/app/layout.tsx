@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import { SubscribeForm } from './subscribe/subscribe-form'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -109,8 +110,23 @@ export default function RootLayout({
                 </Link>
               </nav>
             </div>
-            <div className="mt-8 border-t border-white/15 pt-6 text-xs text-slate-500">
-              &copy; {new Date().getFullYear()} YACTracker
+            <div className="mt-8 border-t border-white/15 pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-300">
+                    Join our mailing list
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    New programs and deadlines, straight to your inbox.
+                  </p>
+                </div>
+                <div className="w-full sm:w-80">
+                  <SubscribeForm variant="dark" />
+                </div>
+              </div>
+              <p className="mt-6 text-xs text-slate-500">
+                &copy; {new Date().getFullYear()} YACTracker
+              </p>
             </div>
           </div>
         </footer>
