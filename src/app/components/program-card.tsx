@@ -94,7 +94,7 @@ export function ProgramCard({ program }: { program: Program }) {
       </p>
 
       {shownInstruments.length > 0 && (
-        <div className="mt-2.5 mb-1 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {shownInstruments.map((i) => (
             <span
               key={i.id}
@@ -111,10 +111,10 @@ export function ProgramCard({ program }: { program: Program }) {
         </div>
       )}
 
-      <div className="mt-2 mb-2 border-b border-slate-100" />
+      <div className="sm:mb-4 mb-3" />
 
       {/* Desktop: single row */}
-      <div className="hidden sm:flex items-center justify-between">
+      <div className="hidden sm:flex items-center justify-between sm:mt-auto sm:pt-4 sm:border-t sm:border-slate-200">
         <div className="flex items-center gap-1.5 text-sm">
           <span className="inline-flex items-center gap-1 font-medium text-slate-900">
             <svg
@@ -197,7 +197,7 @@ export function ProgramCard({ program }: { program: Program }) {
       </div>
 
       {/* Mobile: two rows with rating centered on right */}
-      <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 sm:hidden text-sm">
+      <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 sm:hidden text-sm mt-auto pt-2.5 border-t border-slate-200">
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 font-medium text-slate-900">
             <svg
