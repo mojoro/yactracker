@@ -6,22 +6,22 @@ import type { Audition, Review } from '@/lib/types'
 import { submitReview } from './actions'
 import { ReportButton } from './report-form'
 
-function formatTuition(n: number | null): string {
-  if (n === null) return '—'
+function formatTuition(n: number | null): string | null {
+  if (n === null) return null
   if (n === 0) return 'Free'
   return `$${n.toLocaleString('en-US')}`
 }
 
-function formatFee(n: number | null): string {
-  if (n === null) return '—'
+function formatFee(n: number | null): string | null {
+  if (n === null) return null
   if (n === 0) return 'Free'
   return `$${n.toLocaleString('en-US')}`
 }
 
-function formatDate(iso: string | null, opts?: { time?: boolean }): string {
-  if (!iso) return '—'
+function formatDate(iso: string | null, opts?: { time?: boolean }): string | null {
+  if (!iso) return null
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return null
   const dateOpts: Intl.DateTimeFormatOptions = {
     month: 'short',
     day: 'numeric',
@@ -35,18 +35,30 @@ function formatDate(iso: string | null, opts?: { time?: boolean }): string {
   return d.toLocaleString('en-US', dateOpts)
 }
 
-function formatDateRange(a: string | null, b: string | null): string {
-  if (!a && !b) return '—'
+function formatDateRange(a: string | null, b: string | null): string | null {
+  if (!a && !b) return null
   if (a && b) return `${formatDate(a)} → ${formatDate(b)}`
   if (a) return formatDate(a)
   return formatDate(b)
 }
 
-function formatAgeRange(min: number | null, max: number | null): string {
-  if (min === null && max === null) return '—'
+function formatAgeRange(min: number | null, max: number | null): string | null {
+  if (min === null && max === null) return null
   if (min !== null && max !== null) return `${min}–${max}`
   if (min !== null) return `${min}+`
   return `up to ${max}`
+}
+
+function EditLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-tag-700 hover:text-brand-600 transition-colors"
+    >
+      <span>&mdash;</span>
+      <span className="text-xs font-medium">Add</span>
+    </Link>
+  )
 }
 
 function renderStars(rating: number): string {
@@ -395,17 +407,19 @@ export default async function ProgramDetailPage({
         <h2 className="text-lg font-semibold text-slate-900">Key facts</h2>
         <dl className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3">
           <KeyFact label="Dates">
-            {formatDateRange(program.start_date, program.end_date)}
+            {formatDateRange(program.start_date, program.end_date) ?? <EditLink href={`/programs/${slug}/edit`} />}
           </KeyFact>
           <KeyFact label="Application deadline">
-            {formatDate(program.application_deadline)}
+            {formatDate(program.application_deadline) ?? <EditLink href={`/programs/${slug}/edit`} />}
           </KeyFact>
-          <KeyFact label="Tuition">{formatTuition(program.tuition)}</KeyFact>
+          <KeyFact label="Tuition">
+            {formatTuition(program.tuition) ?? <EditLink href={`/programs/${slug}/edit`} />}
+          </KeyFact>
           <KeyFact label="Application fee">
-            {formatFee(program.application_fee)}
+            {formatFee(program.application_fee) ?? <EditLink href={`/programs/${slug}/edit`} />}
           </KeyFact>
           <KeyFact label="Age range">
-            {formatAgeRange(program.age_min, program.age_max)}
+            {formatAgeRange(program.age_min, program.age_max) ?? <EditLink href={`/programs/${slug}/edit`} />}
           </KeyFact>
           <KeyFact label="Scholarship">
             {program.offers_scholarship ? (
@@ -423,7 +437,7 @@ export default async function ProgramDetailPage({
       <section className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
         <h2 className="text-lg font-semibold text-slate-900">About</h2>
         <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-          {program.description ?? '—'}
+          {program.description ?? <EditLink href={`/programs/${slug}/edit`} />}
         </p>
         <div className="mt-4 border-t border-slate-100 pt-3">
           <ReportButton programId={program_id} label="Report inaccurate information" />
