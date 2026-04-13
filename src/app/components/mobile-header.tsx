@@ -72,6 +72,12 @@ export function MobileHeader() {
             >
               Submit a Program
             </Link>
+            <Link
+              href="/about"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
+              About
+            </Link>
           </nav>
 
           {/* Mobile hamburger — animated bars to X */}
@@ -113,6 +119,12 @@ export function MobileHeader() {
             className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
             Submit a Program
+          </Link>
+          <Link
+            href="/about"
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            About
           </Link>
         </nav>
       </div>

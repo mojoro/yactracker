@@ -1,45 +1,45 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Geist, Geist_Mono } from 'next/font/google'
-import './globals.css'
-import { SubscribeForm } from './subscribe/subscribe-form'
-import { MobileHeader } from './components/mobile-header'
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { SubscribeForm } from "./subscribe/subscribe-form";
+import { MobileHeader } from "./components/mobile-header";
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: 'Young Artist Community | Classical Music Programs Directory',
+  title: "Young Artist Community | Classical Music Programs Directory",
   description:
-    'Find and review young artist programs in classical music and opera. A community resource for singers and instrumentalists.',
-  metadataBase: new URL('https://youngartist.community'),
+    "Find and review young artist programs in classical music and opera. A community resource for singers and instrumentalists.",
+  metadataBase: new URL("https://youngartist.community"),
   openGraph: {
-    type: 'website',
-    siteName: 'Young Artist Community',
-    title: 'Young Artist Community',
+    type: "website",
+    siteName: "Young Artist Community",
+    title: "Young Artist Community",
     description:
-      'Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.',
-    url: 'https://youngartist.community',
+      "Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.",
+    url: "https://youngartist.community",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Young Artist Community',
+    card: "summary_large_image",
+    title: "Young Artist Community",
     description:
-      'Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.',
+      "Browse, compare, and review young artist programs in classical music and opera. Built by the community, for the community.",
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html
@@ -54,13 +54,48 @@ export default function RootLayout({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div>
                 <div className="flex items-center gap-2">
-                  <svg className="h-7 w-7" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                    <rect width="32" height="32" rx="7" className="fill-brand-500" />
-                    <path d="M13 4 L13 17 Q13 21 16 21 Q19 21 19 17 L19 4" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none" />
-                    <path d="M16 21 L16 28" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
+                  <svg
+                    className="h-7 w-7"
+                    viewBox="0 0 32 32"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      width="32"
+                      height="32"
+                      rx="7"
+                      className="fill-brand-500"
+                    />
+                    <path
+                      d="M13 4 L13 17 Q13 21 16 21 Q19 21 19 17 L19 4"
+                      stroke="white"
+                      strokeWidth="2.8"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                    <path
+                      d="M16 21 L16 28"
+                      stroke="white"
+                      strokeWidth="2.8"
+                      strokeLinecap="round"
+                    />
                     <circle cx="16" cy="28.5" r="1.5" fill="white" />
-                    <path d="M9.5 5.5 Q8 12 10.5 15" stroke="white" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity="0.35" />
-                    <path d="M22.5 5.5 Q24 12 21.5 15" stroke="white" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity="0.35" />
+                    <path
+                      d="M9.5 5.5 Q8 12 10.5 15"
+                      stroke="white"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.35"
+                    />
+                    <path
+                      d="M22.5 5.5 Q24 12 21.5 15"
+                      stroke="white"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.35"
+                    />
                   </svg>
                   <span className="text-base font-semibold text-white">
                     Young Artist Community
@@ -70,7 +105,7 @@ export default function RootLayout({
                   A community directory for classical music and opera programs.
                 </p>
               </div>
-              <nav className="flex gap-6 text-sm text-slate-300">
+              <nav className="flex flex-wrap gap-6 text-sm text-slate-300">
                 <Link href="/" className="transition-colors hover:text-white">
                   Home
                 </Link>
@@ -79,6 +114,18 @@ export default function RootLayout({
                   className="transition-colors hover:text-white"
                 >
                   Programs
+                </Link>
+                <Link
+                  href="/programs/new"
+                  className="transition-colors hover:text-white"
+                >
+                  Submit a Program
+                </Link>
+                <Link
+                  href="/about"
+                  className="transition-colors hover:text-white"
+                >
+                  About
                 </Link>
               </nav>
             </div>
@@ -89,7 +136,8 @@ export default function RootLayout({
                     Interested in this platform?
                   </p>
                   <p className="mt-0.5 text-xs text-slate-300">
-                    Sign up to let us know there's demand.
+                    Sign up for the mailing list (no spam ever, promise) to let
+                    us know there's demand.
                   </p>
                 </div>
                 <div className="w-full sm:w-80">
@@ -141,5 +189,5 @@ export default function RootLayout({
         </footer>
       </body>
     </html>
-  )
+  );
 }
