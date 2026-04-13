@@ -61,6 +61,12 @@ export function MobileHeader() {
               Home
             </Link>
             <Link
+              href="/about"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
+              About
+            </Link>
+            <Link
               href="/programs"
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
@@ -71,12 +77,6 @@ export function MobileHeader() {
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
               Submit a Program
-            </Link>
-            <Link
-              href="/about"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-            >
-              About
             </Link>
           </nav>
 
@@ -109,6 +109,12 @@ export function MobileHeader() {
             Home
           </Link>
           <Link
+            href="/about"
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            About
+          </Link>
+          <Link
             href="/programs"
             className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
@@ -119,12 +125,6 @@ export function MobileHeader() {
             className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
             Submit a Program
-          </Link>
-          <Link
-            href="/about"
-            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-          >
-            About
           </Link>
         </nav>
       </div>

@@ -110,6 +110,12 @@ export default function RootLayout({
                   Home
                 </Link>
                 <Link
+                  href="/about"
+                  className="transition-colors hover:text-white"
+                >
+                  About
+                </Link>
+                <Link
                   href="/programs"
                   className="transition-colors hover:text-white"
                 >
@@ -120,12 +126,6 @@ export default function RootLayout({
                   className="transition-colors hover:text-white"
                 >
                   Submit a Program
-                </Link>
-                <Link
-                  href="/about"
-                  className="transition-colors hover:text-white"
-                >
-                  About
                 </Link>
               </nav>
             </div>
