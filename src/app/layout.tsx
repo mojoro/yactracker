@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
@@ -48,6 +49,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <Script
+          defer
+          src="https://umami-ek8u.vercel.app/script.js"
+          data-website-id="508812af-e936-49eb-940e-771d2980698f"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
         <MobileHeader />
         <main className="flex-1">{children}</main>
