@@ -1,20 +1,19 @@
-import Link from 'next/link'
-import type { Prisma } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
-import type { Program } from '@/lib/types'
-import { SubscribeForm } from './subscribe/subscribe-form'
-import { ProgramCard } from './components/program-card'
-
+import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import type { Program } from "@/lib/types";
+import { SubscribeForm } from "./subscribe/subscribe-form";
+import { ProgramCard } from "./components/program-card";
 
 const PROGRAM_INCLUDE = {
   program_instruments: { include: { instrument: true } },
   program_categories: { include: { category: true } },
   program_locations: { include: { location: true } },
-} as const
+} as const;
 
 type ProgramWithRelations = Prisma.ProgramGetPayload<{
-  include: typeof PROGRAM_INCLUDE
-}>
+  include: typeof PROGRAM_INCLUDE;
+}>;
 
 function formatProgram(
   row: ProgramWithRelations,
@@ -56,44 +55,46 @@ function formatProgram(
     })),
     average_rating: stats.avg === null ? null : Math.round(stats.avg * 10) / 10,
     review_count: stats.count,
-  }
+  };
 }
 
 async function attachRatingStats(
   programs: ProgramWithRelations[],
 ): Promise<Program[]> {
-  if (programs.length === 0) return []
-  const ids = programs.map((p) => p.id)
+  if (programs.length === 0) return [];
+  const ids = programs.map((p) => p.id);
   const grouped = await prisma.review.groupBy({
-    by: ['program_id'],
+    by: ["program_id"],
     where: { program_id: { in: ids } },
     _avg: { rating: true },
     _count: { rating: true },
-  })
+  });
   const statsMap = new Map(
-    grouped.map((g) => [g.program_id, { avg: g._avg.rating, count: g._count.rating }]),
-  )
+    grouped.map((g) => [
+      g.program_id,
+      { avg: g._avg.rating, count: g._count.rating },
+    ]),
+  );
   return programs.map((p) =>
     formatProgram(p, statsMap.get(p.id) ?? { avg: null, count: 0 }),
-  )
+  );
 }
-
 
 export default async function Home() {
   const [recentRows, categoryRows] = await Promise.all([
     prisma.program.findMany({
-      orderBy: { updated_at: 'desc' },
+      orderBy: { updated_at: "desc" },
       take: 6,
       include: PROGRAM_INCLUDE,
     }),
     prisma.category.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-  ])
+  ]);
 
-  const recent = await attachRatingStats(recentRows)
-  const categories = categoryRows
+  const recent = await attachRatingStats(recentRows);
+  const categories = categoryRows;
 
   return (
     <>
@@ -104,10 +105,10 @@ export default async function Home() {
             A free, community-built directory of young artist programs
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-600">
-            No ads, no paid placements, no paywalls. Just honest information
-            and reviews from singers and instrumentalists who&apos;ve been
-            through these programs. Browse summer festivals, academies, and
-            YAPs&nbsp;&mdash; and help others by sharing your experience.
+            No ads, no paid placements, no paywalls. Just honest information and
+            reviews from singers and instrumentalists who&apos;ve been through
+            these programs. Browse summer festivals, academies, and YAPs. Help
+            others by sharing your experience.
           </p>
 
           <form
@@ -143,24 +144,25 @@ export default async function Home() {
               This directory grows when you contribute
             </h2>
             <p className="sm:mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
-              Every review and program listing here comes from the community.
-              If you&apos;ve attended a program, leave a review. If you know
-              of a program that&apos;s missing, let us know. The more people
-              contribute, the more useful this becomes for everyone.
+              Every review and program listing here comes from the community. If
+              you&apos;ve attended a program, leave a review. If you know of a
+              program that&apos;s missing or see a field that needs updating,
+              please feel free to add it! The more people contribute, the more
+              useful this becomes for everyone.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center sm:justify-center gap-3">
               <Link
-                href="/programs"
+                href="/reviews/new"
                 className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
               >
                 Write a review
               </Link>
-              <a
-                href="mailto:john@johnmoorman.com?subject=Program%20suggestion%20for%20Young%20Artist%20Community"
+              <Link
+                href="/programs/new"
                 className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-900/5 hover:shadow-md transition"
               >
-                Suggest a program
-              </a>
+                Submit a program
+              </Link>
             </div>
           </div>
           <div className="mt-8 border-t border-brand-600/10 pt-6 text-left sm:text-center">
@@ -190,7 +192,9 @@ export default async function Home() {
           </div>
 
           {recent.length === 0 ? (
-            <p className="mt-6 text-sm text-slate-500">No programs available yet.</p>
+            <p className="mt-6 text-sm text-slate-500">
+              No programs available yet.
+            </p>
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {recent.map((program) => (
@@ -209,7 +213,9 @@ export default async function Home() {
           </h2>
 
           {categories.length === 0 ? (
-            <p className="mt-6 text-sm text-slate-500">No categories available.</p>
+            <p className="mt-6 text-sm text-slate-500">
+              No categories available.
+            </p>
           ) : (
             <div className="mt-6 flex flex-wrap gap-3">
               {categories.map((c) => (
@@ -226,5 +232,5 @@ export default async function Home() {
         </div>
       </section>
     </>
-  )
+  );
 }
