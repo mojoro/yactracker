@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SubscribeForm } from "./subscribe/subscribe-form";
 import { MobileHeader } from "./components/mobile-header";
@@ -49,6 +51,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
         <MobileHeader />
         <main className="flex-1">{children}</main>
+        <Analytics />
+        <SpeedInsights />
         <footer className="bg-brand-900">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
