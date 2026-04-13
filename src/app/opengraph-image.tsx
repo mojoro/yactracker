@@ -77,8 +77,8 @@ export default function OGImage() {
               style={{
                 padding: '8px 20px',
                 borderRadius: 999,
-                background: '#d8ccef',
-                color: '#4a3078',
+                background: '#6b52a0',
+                color: '#ffffff',
                 fontSize: 24,
                 fontWeight: 500,
               }}
