@@ -99,12 +99,12 @@ export default async function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-white py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h1 className="max-w-3xl text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
+      <section className="bg-white py-12 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="mx-auto max-w-3xl text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
             A free, community-built directory of young artist programs
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-slate-600">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
             No ads, no paid placements, no paywalls. Just honest information and
             reviews from singers and instrumentalists who&apos;ve been through
             these programs. Browse summer festivals, academies, and YAPs. Help
@@ -114,24 +114,45 @@ export default async function Home() {
           <form
             action="/programs"
             method="GET"
-            className="mt-8 flex max-w-xl flex-col gap-3 sm:flex-row sm:gap-2"
+            className="mx-auto mt-8 max-w-xl"
           >
             <label htmlFor="home-search" className="sr-only">
               Search programs
             </label>
-            <input
-              id="home-search"
-              type="text"
-              name="q"
-              placeholder="Search programs..."
-              className="flex-1 rounded-full border-0 bg-slate-100 px-5 py-3 text-base ring-1 ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
-            >
-              Search
-            </button>
+            {/* Mobile: input with nested button */}
+            <div className="relative sm:hidden">
+              <input
+                id="home-search"
+                type="text"
+                name="q"
+                placeholder="Search programs..."
+                className="w-full rounded-full border-0 bg-slate-100 pl-5 pr-12 py-3 text-base ring-1 ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 hover:bg-brand-700 transition-colors"
+                aria-label="Search"
+              >
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </button>
+            </div>
+            {/* Desktop: side by side */}
+            <div className="hidden sm:flex gap-2">
+              <input
+                type="text"
+                name="q"
+                placeholder="Search programs..."
+                className="flex-1 rounded-full border-0 bg-slate-100 px-5 py-3 text-base ring-1 ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -139,18 +160,18 @@ export default async function Home() {
       {/* Community contribution CTA */}
       <section className="bg-brand-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
-          <div className="text-left sm:text-center">
+          <div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
               This directory grows when you contribute
             </h2>
-            <p className="sm:mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
               Every review and program listing here comes from the community. If
               you&apos;ve attended a program, leave a review. If you know of a
               program that&apos;s missing or see a field that needs updating,
               please feel free to add it! The more people contribute, the more
               useful this becomes for everyone.
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center sm:justify-center gap-3">
+            <div className="mt-6 flex flex-row justify-center sm:justify-start gap-3">
               <Link
                 href="/reviews/new"
                 className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
@@ -165,11 +186,11 @@ export default async function Home() {
               </Link>
             </div>
           </div>
-          <div className="mt-8 border-t border-brand-600/10 pt-6 text-left sm:text-center">
+          <div className="mt-8 border-t border-brand-600/10 pt-6">
             <p className="text-sm font-medium text-slate-600">
               Want to stay in the loop?
             </p>
-            <div className="sm:mx-auto mt-3 max-w-sm">
+            <div className="mt-3 max-w-sm">
               <SubscribeForm variant="light" />
             </div>
           </div>
