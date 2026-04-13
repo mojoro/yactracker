@@ -3,25 +3,8 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { Program } from '@/lib/types'
 import { SubscribeForm } from './subscribe/subscribe-form'
+import { ProgramCard } from './components/program-card'
 
-function formatTuition(n: number | null): string {
-  if (n === null || n === 0) return 'Free'
-  return `$${n.toLocaleString('en-US')}`
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '\u2014'
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(iso))
-}
-
-function formatLocations(program: Program): string {
-  if (program.locations.length === 0) return '\u2014'
-  return program.locations.map((l) => `${l.city}, ${l.country}`).join(' \u00b7 ')
-}
 
 const PROGRAM_INCLUDE = {
   program_instruments: { include: { instrument: true } },
@@ -95,85 +78,6 @@ async function attachRatingStats(
   )
 }
 
-function RatingDisplay({ avg, count }: { avg: number | null; count: number }) {
-  if (count === 0 || avg === null) {
-    return <span className="text-xs text-slate-400">No reviews</span>
-  }
-  return (
-    <span className="flex items-center gap-1">
-      <svg
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        className="h-4 w-4 text-accent-500"
-        aria-hidden="true"
-      >
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-      </svg>
-      <span className="text-sm font-semibold text-slate-900">{avg.toFixed(1)}</span>
-      <span className="text-xs text-slate-400">({count})</span>
-    </span>
-  )
-}
-
-function ProgramCard({ program }: { program: Program }) {
-  const visibleCategories = program.categories.slice(0, 3)
-  const extraCategoryCount = program.categories.length - visibleCategories.length
-
-  return (
-    <article className="rounded-xl bg-white shadow-sm ring-1 ring-slate-900/5 transition hover:shadow-md hover:-translate-y-0.5">
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5">
-            {visibleCategories.map((c) => (
-              <span
-                key={c.id}
-                className="rounded-full bg-tag-50 px-2.5 py-0.5 text-xs font-medium text-tag-700"
-              >
-                {c.name}
-              </span>
-            ))}
-            {extraCategoryCount > 0 && (
-              <span className="rounded-full bg-tag-50 px-2.5 py-0.5 text-xs font-medium text-tag-700">
-                +{extraCategoryCount}
-              </span>
-            )}
-          </div>
-          {program.offers_scholarship && (
-            <span className="shrink-0 rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 ring-1 ring-success-600/20">
-              Scholarship
-            </span>
-          )}
-        </div>
-
-        <h3 className="mt-3 text-base font-semibold leading-snug text-slate-900">
-          <Link
-            href={`/programs/${program.slug}`}
-            className="hover:text-brand-600 transition-colors"
-          >
-            {program.name}
-          </Link>
-        </h3>
-
-        <p className="mt-1.5 text-sm text-slate-500">
-          {formatLocations(program)}
-        </p>
-
-        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-          <div className="flex items-center gap-1 text-sm">
-            <span className="font-medium text-slate-900">
-              {formatTuition(program.tuition)}
-            </span>
-            <span className="text-slate-300">&middot;</span>
-            <span className="text-slate-500">
-              {formatDate(program.application_deadline)}
-            </span>
-          </div>
-          <RatingDisplay avg={program.average_rating} count={program.review_count} />
-        </div>
-      </div>
-    </article>
-  )
-}
 
 export default async function Home() {
   const today = new Date()
