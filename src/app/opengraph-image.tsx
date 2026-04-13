@@ -21,12 +21,14 @@ export default function OGImage() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {/* Tuning fork icon */}
+        {/* Tuning fork icon with resonance arcs */}
         <svg width="120" height="120" viewBox="0 0 32 32" fill="none">
           <rect width="32" height="32" rx="8" fill="rgba(255,255,255,0.2)" />
           <path d="M13 4 L13 17 Q13 21 16 21 Q19 21 19 17 L19 4" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none" />
           <path d="M16 21 L16 28" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
           <circle cx="16" cy="28.5" r="1.5" fill="white" />
+          <path d="M9.5 5.5 Q8 12 10.5 15" stroke="white" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity="0.35" />
+          <path d="M22.5 5.5 Q24 12 21.5 15" stroke="white" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity="0.35" />
         </svg>
 
         <div
@@ -75,8 +77,8 @@ export default function OGImage() {
               style={{
                 padding: '8px 20px',
                 borderRadius: 999,
-                background: 'rgba(255,255,255,0.15)',
-                color: 'rgba(255,255,255,0.9)',
+                background: '#d8ccef',
+                color: '#4a3078',
                 fontSize: 24,
                 fontWeight: 500,
               }}
