@@ -107,6 +107,21 @@
 }
 */
 
+/* ---------- Interactive elements ---------- */
+@layer base {
+  a,
+  button,
+  select,
+  [role="button"],
+  [type="submit"],
+  [type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  summary {
+    cursor: pointer;
+  }
+}
+
 /* ---------- ACTIVE PALETTE ---------- */
 @theme inline {
   --font-sans: var(--font-geist-sans);
