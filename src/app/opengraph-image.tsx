@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og'
 export const runtime = 'nodejs'
 export const revalidate = 86400
 export const alt = 'Young Artist Community'
-export const size = { width: 2400, height: 1260 }
+export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export default function OGImage() {
@@ -22,7 +22,7 @@ export default function OGImage() {
         }}
       >
         {/* Tuning fork icon with resonance arcs */}
-        <svg width="240" height="240" viewBox="0 0 32 32" fill="none">
+        <svg width="120" height="120" viewBox="0 0 32 32" fill="none">
           <rect width="32" height="32" rx="8" fill="rgba(255,255,255,0.2)" />
           <path d="M13 4 L13 17 Q13 21 16 21 Q19 21 19 17 L19 4" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none" />
           <path d="M16 21 L16 28" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
@@ -36,12 +36,12 @@ export default function OGImage() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            marginTop: 64,
+            marginTop: 32,
           }}
         >
           <div
             style={{
-              fontSize: 168,
+              fontSize: 84,
               fontWeight: 800,
               color: 'white',
               lineHeight: 1.1,
@@ -52,12 +52,12 @@ export default function OGImage() {
           </div>
           <div
             style={{
-              fontSize: 72,
+              fontSize: 36,
               fontWeight: 400,
               color: 'rgba(255,255,255,0.8)',
-              marginTop: 32,
+              marginTop: 16,
               textAlign: 'center',
-              maxWidth: 1400,
+              maxWidth: 700,
             }}
           >
             Browse, compare, and review classical music programs
@@ -67,19 +67,19 @@ export default function OGImage() {
         <div
           style={{
             display: 'flex',
-            gap: 48,
-            marginTop: 96,
+            gap: 24,
+            marginTop: 48,
           }}
         >
           {['Opera', 'Orchestral', 'Chamber Music', 'Art Song'].map((cat) => (
             <div
               key={cat}
               style={{
-                padding: '16px 40px',
+                padding: '8px 20px',
                 borderRadius: 999,
                 background: '#6b52a0',
                 color: '#ffffff',
-                fontSize: 48,
+                fontSize: 24,
                 fontWeight: 500,
               }}
             >
@@ -91,8 +91,8 @@ export default function OGImage() {
         <div
           style={{
             position: 'absolute',
-            bottom: 64,
-            fontSize: 48,
+            bottom: 32,
+            fontSize: 24,
             color: 'rgba(255,255,255,0.5)',
           }}
         >
