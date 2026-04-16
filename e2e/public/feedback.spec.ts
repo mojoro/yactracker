@@ -16,7 +16,7 @@ test.describe('feedback modal', () => {
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByText(/send feedback/i)).toBeVisible()
+    await expect(dialog.getByRole('heading', { name: /send feedback/i })).toBeVisible()
   })
 
   test('submitting empty form shows validation', async ({ page }) => {
