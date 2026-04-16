@@ -5,12 +5,14 @@ setup('authenticate as admin', async ({ browser, baseURL }) => {
   expect(token, 'ADMIN_TOKEN env var must be set').toBeTruthy()
 
   const url = baseURL ?? 'http://localhost:3000'
+  const { hostname } = new URL(url)
   const context = await browser.newContext()
   await context.addCookies([
     {
       name: 'admin_token',
       value: token!,
-      url: `${url}/admin`,
+      domain: hostname,
+      path: '/',
     },
   ])
   await context.storageState({ path: 'e2e/.auth/admin.json' })
