@@ -1,20 +1,13 @@
 import { test as setup, expect } from '@playwright/test'
 
-setup('authenticate as admin', async ({ browser, baseURL }) => {
+setup('authenticate as admin', async ({ page }) => {
   const token = process.env.ADMIN_TOKEN
   expect(token, 'ADMIN_TOKEN env var must be set').toBeTruthy()
 
-  const url = baseURL ?? 'http://localhost:3000'
-  const { hostname } = new URL(url)
-  const context = await browser.newContext()
-  await context.addCookies([
-    {
-      name: 'admin_token',
-      value: token!,
-      domain: hostname,
-      path: '/',
-    },
-  ])
-  await context.storageState({ path: 'e2e/.auth/admin.json' })
-  await context.close()
+  await page.goto('/admin')
+  await page.locator('input#token').fill(token!)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/admin\/import/)
+
+  await page.context().storageState({ path: 'e2e/.auth/admin.json' })
 })
