@@ -59,12 +59,17 @@ export async function GET(request: NextRequest, context: RouteContext): Promise<
         orderBy,
         skip: pagination.skip,
         take: pagination.take,
+        include: { _count: { select: { review_likes: true } } },
       }),
       prisma.review.count({ where }),
     ])
 
     return NextResponse.json({
-      items,
+      items: items.map((r) => ({
+        ...r,
+        helpful_count: r._count.review_likes,
+        _count: undefined,
+      })),
       meta: buildMeta(pagination, totalItems),
     })
   } catch (err) {

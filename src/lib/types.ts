@@ -72,6 +72,7 @@ export interface Review {
   reviewer_name: string | null
   title: string | null
   body: string
+  helpful_count: number
   created_at: string
   updated_at: string
 }
