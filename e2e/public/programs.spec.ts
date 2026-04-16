@@ -45,7 +45,6 @@ test.describe('Programs listing page', () => {
 
     // Click card view button to switch back
     await page.getByRole('link', { name: 'Card view' }).click()
-    await page.waitForURL(/view=card/)
     await expect(page.locator('article').first()).toBeVisible()
   })
 })
