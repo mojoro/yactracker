@@ -10,6 +10,11 @@ interface CachedRobot {
 // which is fine: one cron run touches each host's robots.txt at most once.
 const cache = new Map<string, CachedRobot>()
 
+/** Exposed for testing only — clears the robots.txt cache. */
+export function _clearRobotsCache() {
+  cache.clear()
+}
+
 function originOf(url: string): string {
   const u = new URL(url)
   return `${u.protocol}//${u.host}`
