@@ -43,21 +43,12 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Create Neon branch
-        id: neon
-        uses: neondatabase/create-branch-action@v6
+      - name: Wait for Vercel preview deployment
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+        id: vercel
         with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: ci/pr-${{ github.event.number }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-
-      - run: npx prisma db push --skip-generate
-        env:
-          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
-
-      - run: npx tsx prisma/seed.ts
-        env:
-          DATABASE_URL: ${{ steps.neon.outputs.db_url_with_pooler }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 600
 
       - name: Cache Playwright
         id: pw-cache
@@ -71,13 +62,10 @@ jobs:
       - if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - run: npm run build
+      - name: Run Playwright tests
+        run: npx playwright test
         env:
-          DATABASE_URL: ${{ steps.neon.outputs.db_url_with_pooler }}
-
-      - run: npx playwright test
-        env:
-          DATABASE_URL: ${{ steps.neon.outputs.db_url_with_pooler }}
+          BASE_URL: ${{ steps.vercel.outputs.url }}
           ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN }}
 
       - uses: actions/upload-artifact@v4

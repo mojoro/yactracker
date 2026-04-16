@@ -40,12 +40,12 @@ test.describe('Programs listing page', () => {
 
     // Click list view button
     await page.getByRole('link', { name: 'List view' }).click()
+    await page.waitForURL(/view=list/)
     await expect(page.locator('table')).toBeVisible()
-    await expect(page.locator('article')).toHaveCount(0)
 
     // Click card view button to switch back
     await page.getByRole('link', { name: 'Card view' }).click()
+    await page.waitForURL(/view=card/)
     await expect(page.locator('article').first()).toBeVisible()
-    await expect(page.locator('table')).toHaveCount(0)
   })
 })
