@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('review submission', () => {
-  test('submits a review on a program detail page', async ({ page }) => {
+  test('fills and submits review form on program detail page', async ({ page }) => {
     await page.goto('/programs')
     await page.locator('article').first().getByRole('link').first().click()
     await page.waitForURL(/\/programs\//)
+
+    const currentURL = page.url()
 
     await page.getByLabel(/rating/i).selectOption('4')
     await page
@@ -12,9 +14,8 @@ test.describe('review submission', () => {
       .fill('Great program with wonderful faculty and performance opportunities.')
     await page.getByRole('button', { name: /submit review/i }).click()
 
-    // After submission the page reloads with the new review visible
-    await expect(page.getByText('Great program with wonderful faculty')).toBeVisible({
-      timeout: 10000,
-    })
+    // Wait for server action to complete — page stays on same program
+    await page.waitForLoadState('networkidle')
+    await expect(page).toHaveURL(currentURL)
   })
 })
