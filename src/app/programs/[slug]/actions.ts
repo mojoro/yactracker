@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { apiFetch } from '@/lib/api'
 import { extractIp, hashIp } from '@/lib/ip-hash'
 import { prisma } from '@/lib/prisma'
@@ -133,6 +133,26 @@ export async function toggleHelpful(
   }
 
   const helpful_count = await prisma.reviewLike.count({ where: { review_id: reviewId } })
+
+  const cookieStore = await cookies()
+  const raw = cookieStore.get('helpful_reviews')?.value
+  const likedIds: string[] = raw ? JSON.parse(raw) : []
+
+  if (existing) {
+    const updated = likedIds.filter((id) => id !== reviewId)
+    cookieStore.set('helpful_reviews', JSON.stringify(updated), {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  } else {
+    likedIds.push(reviewId)
+    cookieStore.set('helpful_reviews', JSON.stringify(likedIds), {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  }
 
   return { helpful_count, liked: !existing }
 }

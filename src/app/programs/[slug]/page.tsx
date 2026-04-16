@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { Audition, Review } from '@/lib/types'
 import { submitReview } from './actions'
+import { HelpfulButton } from './helpful-button'
 import { ReportButton } from './report-form'
 
 function formatTuition(n: number | null): string | null {
@@ -107,6 +109,7 @@ function formatReviewRow(row: {
   reviewer_name: string | null
   title: string | null
   body: string
+  helpful_count: number
   created_at: Date
   updated_at: Date
 }): Review {
@@ -118,6 +121,7 @@ function formatReviewRow(row: {
     reviewer_name: row.reviewer_name,
     title: row.title,
     body: row.body,
+    helpful_count: row.helpful_count,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
   }
@@ -186,7 +190,15 @@ function AuditionCard({ audition }: { audition: Audition }) {
   )
 }
 
-function ReviewCard({ review, programId }: { review: Review; programId: string }) {
+function ReviewCard({
+  review,
+  programId,
+  liked,
+}: {
+  review: Review
+  programId: string
+  liked: boolean
+}) {
   return (
     <li className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
       <div className="flex items-center justify-between">
@@ -212,6 +224,7 @@ function ReviewCard({ review, programId }: { review: Review; programId: string }
       <p className="mt-3 text-sm leading-relaxed whitespace-pre-line text-slate-700">
         {review.body}
       </p>
+      <HelpfulButton reviewId={review.id} initialCount={review.helpful_count} initialLiked={liked} />
     </li>
   )
 }
@@ -237,6 +250,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
       where: { program_id },
       orderBy: { created_at: 'desc' },
       take: 50,
+      include: { _count: { select: { review_likes: true } } },
     }),
     prisma.audition.findMany({
       where: { program_id },
@@ -287,8 +301,14 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
     review_count: ratingAgg._count.rating,
   }
 
-  const reviews: Review[] = reviewRows.map(formatReviewRow)
+  const reviews: Review[] = reviewRows.map((r) =>
+    formatReviewRow({ ...r, helpful_count: r._count.review_likes }),
+  )
   const auditions: Audition[] = auditionRows.map(formatAuditionRow)
+
+  const cookieStore = await cookies()
+  const likedRaw = cookieStore.get('helpful_reviews')?.value
+  const likedSet = new Set<string>(likedRaw ? JSON.parse(likedRaw) : [])
 
   const locationLabel = program.locations.map((l) => `${l.city}, ${l.country}`).join(' • ')
 
@@ -532,7 +552,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
         {reviews.length > 0 && (
           <ul className="mt-4 space-y-4">
             {reviews.map((r) => (
-              <ReviewCard key={r.id} review={r} programId={program_id} />
+              <ReviewCard key={r.id} review={r} programId={program_id} liked={likedSet.has(r.id)} />
             ))}
           </ul>
         )}
