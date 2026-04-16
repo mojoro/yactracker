@@ -7,6 +7,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 import { SubscribeForm } from './subscribe/subscribe-form'
 import { MobileHeader } from './components/mobile-header'
+import { FeedbackModal } from './components/feedback-modal'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -116,6 +117,9 @@ export default function RootLayout({
                 <Link href="/programs/new" className="transition-colors hover:text-white">
                   Submit a Program
                 </Link>
+                <div className="[&_.feedback-trigger]:text-slate-300 [&_.feedback-trigger]:transition-colors hover:[&_.feedback-trigger]:text-white">
+                  <FeedbackModal />
+                </div>
               </nav>
             </div>
             <div className="mt-8 border-t border-white/15 pt-6">
