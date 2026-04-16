@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { apiFetch } from '@/lib/api'
+import { extractIp, hashIp } from '@/lib/ip-hash'
 import { prisma } from '@/lib/prisma'
 
 export interface ReportFormState {
@@ -111,4 +113,26 @@ export async function submitReview(formData: FormData): Promise<void> {
     select: { slug: true },
   })
   if (prog?.slug) revalidatePath(`/programs/${prog.slug}`)
+}
+
+export async function toggleHelpful(
+  reviewId: string,
+): Promise<{ helpful_count: number; liked: boolean }> {
+  const headerStore = await headers()
+  const ip = extractIp(headerStore)
+  const ip_hash = await hashIp(ip)
+
+  const existing = await prisma.reviewLike.findUnique({
+    where: { review_id_ip_hash: { review_id: reviewId, ip_hash } },
+  })
+
+  if (existing) {
+    await prisma.reviewLike.delete({ where: { id: existing.id } })
+  } else {
+    await prisma.reviewLike.create({ data: { review_id: reviewId, ip_hash } })
+  }
+
+  const helpful_count = await prisma.reviewLike.count({ where: { review_id: reviewId } })
+
+  return { helpful_count, liked: !existing }
 }
