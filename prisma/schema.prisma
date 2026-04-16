@@ -55,8 +55,21 @@ model Review {
 
   program        Program  @relation(fields: [program_id], references: [id])
   reports        Report[]
+  review_likes   ReviewLike[]
 
   @@map("review")
+}
+
+model ReviewLike {
+  id         String   @id @default(uuid())
+  review_id  String
+  ip_hash    String
+  created_at DateTime @default(now())
+
+  review     Review   @relation(fields: [review_id], references: [id])
+
+  @@unique([review_id, ip_hash])
+  @@map("review_like")
 }
 
 model Audition {
@@ -249,6 +262,23 @@ model Report {
 
   @@index([status, created_at])
   @@map("report")
+}
+
+// ---------------------------------------------------------------------------
+// Feedback (site-wide user feedback for the site owner)
+// ---------------------------------------------------------------------------
+
+model Feedback {
+  id          String   @id @default(uuid())
+  message     String
+  email       String?
+  status      String   @default("pending") // pending | read | resolved
+  admin_notes String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([status, created_at])
+  @@map("feedback")
 }
 
 // ---------------------------------------------------------------------------
