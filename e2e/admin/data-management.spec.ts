@@ -20,6 +20,8 @@ test.describe('Admin data management', () => {
     await firstLink.click()
 
     await expect(page).toHaveURL(/[?&]program=/)
-    await expect(page.getByRole('heading', { name: new RegExp(programName!, 'i') })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: new RegExp(`^Edit: ${programName!}`, 'i') }),
+    ).toBeVisible()
   })
 })
