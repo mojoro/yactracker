@@ -5,7 +5,7 @@ setup('authenticate as admin', async ({ page }) => {
   expect(token, 'ADMIN_TOKEN env var must be set').toBeTruthy()
 
   await page.goto('/admin')
-  await page.locator('input#token').fill(token!)
+  await page.getByLabel('Admin token').fill(token!)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/admin\/import/)
 

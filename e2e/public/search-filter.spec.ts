@@ -17,7 +17,8 @@ test.describe('programs search and filter', () => {
     const options = categorySelect.locator('option:not([value=""])')
     const optionCount = await options.count()
 
-    if (optionCount > 0) {
+    expect(optionCount, 'Test database must have at least one category').toBeGreaterThan(0)
+    {
       const firstValue = await options.first().getAttribute('value')
       await categorySelect.selectOption(firstValue!)
       // Submit the form — the search label's input triggers form submit on Enter

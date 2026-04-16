@@ -15,7 +15,7 @@ test.describe('review submission', () => {
     await page.getByRole('button', { name: /submit review/i }).click()
 
     // Wait for server action to complete — page stays on same program
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await expect(page).toHaveURL(currentURL)
   })
 })

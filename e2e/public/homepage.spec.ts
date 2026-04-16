@@ -19,8 +19,8 @@ test.describe('Homepage', () => {
   })
 
   test('search input exists', async ({ page }) => {
-    const input = page.getByPlaceholder('Search programs...')
-    expect(await input.count()).toBeGreaterThanOrEqual(1)
+    const input = page.getByPlaceholder(/search/i).filter({ visible: true })
+    await expect(input.first()).toBeVisible()
   })
 
   test('browse by category section has category links', async ({ page }) => {

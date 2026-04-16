@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Admin data management', () => {
   test('page renders with heading', async ({ page }) => {
     await page.goto('/admin/data')
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Manage data')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/manage data/i)
   })
 
   test('programs table lists at least one program', async ({ page }) => {
