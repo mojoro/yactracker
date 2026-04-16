@@ -14,7 +14,17 @@
     "format:check": "prettier --check .",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,yaml,yml,md}": [
+      "prettier --write"
+    ]
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
