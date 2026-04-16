@@ -44,11 +44,32 @@ jobs:
       - run: npm ci
 
       - name: Wait for Vercel preview deployment
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
         id: vercel
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          # Poll for a successful Vercel deployment on this commit
+          SHA="${{ github.event.pull_request.head.sha }}"
+          for i in $(seq 1 150); do
+            URL=$(gh api "repos/${{ github.repository }}/deployments?sha=${SHA}&environment=Preview" \
+              --jq '.[0].payload.web_url // empty' 2>/dev/null || true)
+            if [ -n "$URL" ]; then
+              STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
+                -H "x-vercel-protection-bypass: ${BYPASS_SECRET}" "$URL")
+              if [ "$STATUS" = "200" ]; then
+                echo "url=$URL" >> "$GITHUB_OUTPUT"
+                echo "Preview ready at $URL"
+                exit 0
+              fi
+              echo "Attempt $i: deployment found but status $STATUS"
+            else
+              echo "Attempt $i: no deployment yet"
+            fi
+            sleep 4
+          done
+          echo "::error::Timed out waiting for Vercel preview"
+          exit 1
 
       - name: Cache Playwright
         id: pw-cache
