@@ -7,7 +7,7 @@ setup('authenticate as admin', async ({ browser }) => {
       name: 'admin_token',
       value: process.env.ADMIN_TOKEN!,
       domain: 'localhost',
-      path: '/',
+      path: '/admin',
     },
   ])
   await context.storageState({ path: 'e2e/.auth/admin.json' })
