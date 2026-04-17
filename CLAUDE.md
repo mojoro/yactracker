@@ -2,16 +2,19 @@
 
 ## What this is
 
-YACTracker — a Young Artist Community directory + review platform for Young Artist Programs (YAPs) in classical music/opera. Users browse/filter programs, submit reviews. Admin panel for data management + automated import pipeline.
+YACTracker — a Young Artist Community directory + review platform for Young Artist Programs (YAPs) in classical music/opera. Users browse/filter programs, submit reviews, mark reviews as helpful, submit new programs, edit existing ones (Wikipedia-style revisions), flag reports, and send site feedback. Admin panel for data management, import candidate review, and report/feedback triage.
 
 ## Stack
 
-- Next.js 16 (App Router, Server Components)
+- Next.js 16 (App Router, Server Components, React Compiler enabled)
+- React 19
 - TypeScript (strict mode)
 - Prisma 7 ORM + Neon serverless adapter
 - Neon Postgres (connection string in `DATABASE_URL` env var)
 - Tailwind CSS v4
 - OpenRouter (Claude Haiku 4.5) for LLM extraction
+- Vitest (unit) + Playwright (e2e)
+- Husky + lint-staged pre-commit hooks
 - Deploy to Vercel
 
 ## Project structure
@@ -20,45 +23,60 @@ YACTracker — a Young Artist Community directory + review platform for Young Ar
 yactracker/
 ├── prisma/
 │   ├── schema.prisma          # do not modify without asking
-│   ├── prisma.config.ts       # Prisma 7 config w/ NeonAdapter
 │   └── seed.ts                # seed script: reference data, programs, import sources
+├── prisma.config.ts           # Prisma 7 config (root, reads .env.local)
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx         # root layout w/ header nav, footer, tuning fork logo SVG
 │   │   ├── icon.svg           # favicon — tuning fork mark
+│   │   ├── opengraph-image.tsx # dynamic OG image
 │   │   ├── page.tsx           # landing — featured programs, search, category chips
+│   │   ├── about/page.tsx
+│   │   ├── subscribe/         # mailing list signup (Subscriber model)
+│   │   │   ├── page.tsx
+│   │   │   ├── subscribe-form.tsx
+│   │   │   └── actions.ts
+│   │   ├── components/        # shared client components
+│   │   │   ├── combobox.tsx
+│   │   │   ├── program-card.tsx
+│   │   │   ├── program-combobox.tsx
+│   │   │   ├── mobile-header.tsx
+│   │   │   ├── feedback-modal.tsx     # site-wide feedback widget
+│   │   │   └── feedback-actions.ts
 │   │   ├── programs/
 │   │   │   ├── page.tsx       # browsable/filterable program directory
-│   │   │   └── [program_id]/
-│   │   │       ├── page.tsx   # program detail + reviews + review form
-│   │   │       └── actions.ts # submitReview server action
+│   │   │   ├── new/           # user-submitted new programs (public)
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── program-form.tsx
+│   │   │   │   └── actions.ts
+│   │   │   └── [slug]/        # public pages keyed by slug (not id)
+│   │   │       ├── page.tsx   # detail + reviews + helpful/like + report form
+│   │   │       ├── actions.ts # submitReport server action
+│   │   │       ├── helpful-button.tsx # like a review (ReviewLike, IP-hash dedup)
+│   │   │       ├── report-form.tsx
+│   │   │       ├── edit/      # user program edits → ProgramRevision (Wikipedia-style)
+│   │   │       │   ├── page.tsx
+│   │   │       │   ├── edit-form.tsx
+│   │   │       │   └── actions.ts
+│   │   │       └── auditions/new/
+│   │   │           ├── page.tsx
+│   │   │           ├── audition-form.tsx
+│   │   │           └── actions.ts
+│   │   ├── reviews/new/       # user-submitted reviews (public)
+│   │   │   ├── page.tsx
+│   │   │   ├── review-form.tsx
+│   │   │   └── actions.ts
 │   │   ├── admin/
 │   │   │   ├── page.tsx       # admin login (ADMIN_TOKEN gate)
 │   │   │   ├── actions.ts     # login/logout/isAdminAuthenticated
-│   │   │   ├── import/
-│   │   │   │   ├── page.tsx   # import review: candidates, sources, scrape
-│   │   │   │   ├── actions.ts # approve/reject/addSource/reExtract/runScrape
-│   │   │   │   ├── scrape-button.tsx
-│   │   │   │   ├── re-extract-button.tsx
-│   │   │   │   ├── add-source-form.tsx
-│   │   │   │   └── candidate-editor.tsx
-│   │   │   └── data/
-│   │   │       ├── page.tsx   # program/review/audition CRUD
-│   │   │       ├── actions.ts # updateProgram/deleteProgram/deleteReview/audition CRUD
-│   │   │       ├── program-editor.tsx
-│   │   │       ├── audition-form.tsx
-│   │   │       └── delete-button.tsx
+│   │   │   ├── import/        # candidate review, sources, scrape trigger
+│   │   │   ├── data/          # program/review/audition CRUD
+│   │   │   ├── reports/       # triage user-submitted reports (status: pending/reviewed/...)
+│   │   │   └── feedback/      # triage site-wide feedback
 │   │   └── api/               # REST API (Zalando-aligned, RFC 9457 errors)
-│   │       ├── programs/      # GET list/filter, POST create
-│   │       │   └── [program_id]/
-│   │       │       ├── route.ts          # GET single, PUT update
-│   │       │       ├── reviews/route.ts  # GET list, POST create
-│   │       │       │   └── [review_id]/route.ts
-│   │       │       └── auditions/route.ts
-│   │       │           └── [audition_id]/route.ts
-│   │       ├── instruments/   # GET list, POST create, PUT update
-│   │       ├── categories/    # GET list, POST create, PUT update
-│   │       ├── locations/     # GET list, POST create, PUT update
+│   │       ├── programs/      # [program_id] — API still keyed by id, not slug
+│   │       │   └── [program_id]/{route.ts, reviews/, auditions/}
+│   │       ├── instruments/ · categories/ · locations/
 │   │       └── import/run/    # POST trigger scrape (CRON_SECRET gated)
 │   └── lib/
 │       ├── prisma.ts          # singleton Prisma client w/ NeonAdapter
@@ -66,20 +84,32 @@ yactracker/
 │       ├── pagination.ts      # cursor-based pagination (opaque base64url tokens)
 │       ├── sort.ts            # sort param parsing + Prisma orderBy
 │       ├── types.ts           # shared TypeScript types
-│       ├── api.ts             # typed fetch helpers (used by server actions only)
+│       ├── api.ts             # typed fetch helpers (server actions only)
+│       ├── slug.ts            # name → kebab-case slug (strips diacritics)
+│       ├── ip-hash.ts         # sha256 of request IP (ReviewLike dedup, etc.)
+│       ├── __mocks__/prisma.ts # vitest-mock-extended mock
+│       ├── *.test.ts          # vitest unit tests colocated in lib/
 │       └── import/
-│           ├── constants.ts   # USER_AGENT, throttle timings
-│           ├── robots.ts      # robots.txt checker
-│           ├── throttle.ts    # per-host rate limiter
-│           ├── fetcher.ts     # HTML fetcher w/ hash diffing
+│           ├── constants.ts · robots.ts · throttle.ts · fetcher.ts
 │           ├── extractor.ts   # OpenRouter LLM extractor w/ Zod validation
 │           ├── candidate.ts   # dedupe matching + ProgramCandidate creation
 │           ├── upsert.ts      # approve → upsert Program from extracted JSON
 │           └── run.ts         # orchestrator: fetch → extract → candidate
+├── e2e/                       # Playwright e2e tests
+│   ├── auth.setup.ts          # logs in admin, writes e2e/.auth/admin.json
+│   ├── public/                # unauthenticated specs (Chromium)
+│   └── admin/                 # authenticated specs, reuse storageState
+├── docs/
+│   ├── blog-context.md
+│   └── program-data-sources.md
+├── public/                    # static assets
 ├── openapi.yaml               # OpenAPI 3.0.3 spec (Zally-linted)
+├── erd.mmd                    # Mermaid ERD
+├── next.config.ts             # reactCompiler: true
+├── playwright.config.ts · vitest.config.ts · eslint.config.mjs · postcss.config.mjs
 ├── vercel.json                # Vercel cron: monthly import run
-├── CLAUDE.md
-└── .env.local                 # DATABASE_URL, ADMIN_TOKEN, OPENROUTER_API_KEY
+├── CLAUDE.md · README.md
+└── .env.local                 # DATABASE_URL, ADMIN_TOKEN, OPENROUTER_API_KEY, CRON_SECRET
 ```
 
 ## Database schema
@@ -88,8 +118,9 @@ Prisma schema at `prisma/schema.prisma`. Models:
 
 **Core entities:**
 
-- `Program` — central entity. Scalar fields: dates, tuition, age range, scholarship, URLs.
+- `Program` — central entity. Scalar fields: dates, tuition, age range, scholarship, URLs. Has unique `slug` (public pages key on this).
 - `Review` — belongs to one Program (FK `program_id`). Fields: rating (int 1-5), year_attended, reviewer_name, title, body.
+- `ReviewLike` — user "helpful" vote on a review. Dedup by `(review_id, ip_hash)` where `ip_hash` is sha256 of the request IP (`src/lib/ip-hash.ts`).
 - `Audition` — belongs to one Program (FK `program_id`) + one Location (FK `location_id`). Fields: time_slot, fee, instructions, registration URL.
 
 **Reference data:**
@@ -103,7 +134,19 @@ Prisma schema at `prisma/schema.prisma`. Models:
 - `ProgramInstrument` — Program ↔ Instrument (M:N)
 - `ProgramCategory` — Program ↔ Category (M:N)
 - `ProgramLocation` — Program ↔ Location (M:N)
+- `ProgramProduction` — Program ↔ Production (M:N, current-season operas/shows)
 - `AuditionInstrument` — Audition ↔ Instrument (M:N)
+
+**Productions:**
+
+- `Production` — opera/show (title + composer). Tied to programs via `ProgramProduction`.
+
+**User edits + moderation:**
+
+- `ProgramRevision` — Wikipedia-style edit history. User program edits write a revision row (JSON snapshot + optional `edit_summary`), not a direct `program` write.
+- `Report` — user-submitted flag on a program or review. Types: `inaccurate_data` | `inappropriate_content` | `other`. Status: `pending` | `reviewed` | `resolved` | `dismissed`. Triage in `/admin/reports`.
+- `Feedback` — site-wide feedback (via `FeedbackModal`). Status: `pending` | `read` | `resolved`. Triage in `/admin/feedback`.
+- `Subscriber` — mailing list email (unique). Written from `/subscribe`.
 
 **Import pipeline:**
 
@@ -138,6 +181,8 @@ All admin pages gated by `ADMIN_TOKEN` env var (cookie-based, set via `/admin` l
 - `/admin` — login page
 - `/admin/import` — import pipeline: candidate review (approve/reject/edit), source management (add/list/re-extract), scrape trigger
 - `/admin/data` — program CRUD (edit all fields), review delete, audition CRUD (create/edit/delete)
+- `/admin/reports` — triage user-submitted reports (update status, add admin notes)
+- `/admin/feedback` — triage site-wide feedback (update status, add admin notes)
 
 Reference data (instruments, categories, locations) is **validated, not auto-created** on the admin pages. Unknown values are rejected with an error listing valid options.
 
@@ -186,6 +231,31 @@ Five named palettes in `globals.css` (one active, rest commented). Active: **Aix
 - Never write raw `font-family` in globals.css — Geist loaded via `next/font`.
 - Use `brand-*`, `accent-*`, `tag-*`, `success-*` tokens for colors — never hardcode `indigo-*`, `amber-*`, `emerald-*` in public pages.
 
+## Scripts
+
+| Script | What it runs |
+| --- | --- |
+| `npm run dev` | `next dev` |
+| `npm run build` | `prisma generate && prisma db push && next build` — schema is pushed to `DATABASE_URL` on every build (including Vercel) |
+| `npm run lint` | `eslint` |
+| `npm run format` / `format:check` | Prettier (incl. `prettier-plugin-tailwindcss`) |
+| `npm test` / `test:watch` / `test:coverage` | vitest (unit) |
+| `npm run db:push` / `db:seed` / `db:studio` | Prisma dev helpers |
+| `npx playwright test` | Playwright e2e |
+
+Husky + lint-staged run `eslint --fix` and Prettier on staged files pre-commit (`prepare: husky`).
+
+## Testing
+
+**Unit (vitest):** `*.test.ts` files colocated in `src/lib/`. Prisma is mocked via `src/lib/__mocks__/prisma.ts` (`vitest-mock-extended`).
+
+**E2E (Playwright):** `e2e/` tree, two projects:
+
+- `public/` — unauthenticated Chromium.
+- `admin/` — depends on `setup` project (`e2e/auth.setup.ts`) which logs in with `ADMIN_TOKEN` and writes `e2e/.auth/admin.json`. Admin specs load that as `storageState`.
+
+Local runs use a `webServer` (`npm run build && npm start` on :3000, `reuseExistingServer`). CI skips that and expects `BASE_URL` set. When `VERCEL_AUTOMATION_BYPASS_SECRET` is present, the `x-vercel-protection-bypass` header is added to all requests — use this to run e2e against a preview deployment.
+
 ## Important constraints
 
 - No public auth/authz. Admin uses `ADMIN_TOKEN`.
@@ -193,6 +263,10 @@ Five named palettes in `globals.css` (one active, rest commented). Active: **Aix
 - Every collection response wrapped in `{ "items": [...] }`.
 - UUIDs for all primary keys.
 - Timestamps UTC, RFC 3339.
+- **Public pages use `slug` in the URL** (`/programs/[slug]`); **API routes still use `program_id`** (`/api/programs/[program_id]`). Don't "fix" this to match.
+- **User program edits go through `ProgramRevision`**, not a direct `program` write. The edit UI is public (`/programs/[slug]/edit`); revisions are the audit trail.
+- **Review likes dedup by hashed IP.** Don't store raw IPs — always go through `src/lib/ip-hash.ts`.
+- **Reference data is validated, not auto-created** on every write path (admin and public).
 - `prisma/` excluded from tsconfig (seed.ts uses standalone PrismaClient).
-- Build command: `prisma generate && next build` (generates client before type-check).
+- React Compiler is enabled (`next.config.ts` `reactCompiler: true` + `babel-plugin-react-compiler`). Don't hand-memoize — let the compiler handle it.
 - OpenAPI spec (`openapi.yaml`) = source of truth for API request/response shapes.
