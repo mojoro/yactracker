@@ -58,7 +58,7 @@ export function PlatformPoll({
   const total = Object.values(state.counts).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="px-4">
+    <div>
       <h3 className="text-sm font-medium text-slate-600">
         Where should the Young Artist Community live?
       </h3>
@@ -73,7 +73,7 @@ export function PlatformPoll({
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
             <li key={platform}>
-              <label className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 transition-colors hover:bg-brand-600/5">
+              <label className="-mx-3 flex cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 transition-colors hover:bg-brand-600/5">
                 <input
                   type="checkbox"
                   checked={voted}
