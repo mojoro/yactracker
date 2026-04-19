@@ -66,36 +66,54 @@ export function PlatformPoll({
         We&apos;re thinking of starting a social space. Vote for any platforms you&apos;d actually
         use — pick as many as you like.
       </p>
-      <ul className="mt-4 flex flex-col gap-2">
+      <ul className="mt-4 flex flex-col gap-3">
         {PLATFORMS.map((platform) => {
           const voted = state.voted[platform]
           const count = state.counts[platform]
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
             <li key={platform}>
-              <label className="-mx-3 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 transition-colors hover:bg-brand-600/5">
-                <input
-                  type="checkbox"
-                  checked={voted}
-                  onChange={() => handleClick(platform)}
-                  disabled={isPending}
-                  className="h-4 w-4 shrink-0 cursor-pointer accent-brand-600 disabled:opacity-60"
-                />
-                <span className="w-20 shrink-0 text-sm font-medium text-slate-700">
-                  {LABELS[platform]}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="relative h-2 flex-1 overflow-hidden rounded-full bg-brand-600/10"
-                >
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-brand-600 transition-[width] duration-300 ease-out"
-                    style={{ width: `${pct}%` }}
+              <label className="-mx-3 flex cursor-pointer items-center gap-4 rounded-xl px-3 py-2 transition-colors hover:bg-brand-600/5 sm:gap-3 sm:py-1.5">
+                <span className="relative mt-2 inline-block h-6 w-6 shrink-0 self-center sm:mt-0 sm:h-4 sm:w-4">
+                  <input
+                    type="checkbox"
+                    checked={voted}
+                    onChange={() => handleClick(platform)}
+                    disabled={isPending}
+                    className="peer h-full w-full cursor-pointer appearance-none rounded-full border-2 border-slate-300 bg-white transition-colors checked:border-brand-600 checked:bg-brand-600 disabled:opacity-60"
                   />
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="pointer-events-none absolute top-1/2 left-1/2 hidden h-3/5 w-3/5 -translate-x-1/2 -translate-y-1/2 text-white peer-checked:block"
+                  >
+                    <path d="M4 8.5 6.5 11 12 5.5" />
+                  </svg>
                 </span>
-                <span className="w-20 shrink-0 text-right text-sm text-slate-500 tabular-nums">
-                  {Math.round(pct)}% ({count})
-                </span>
+                <div className="flex flex-1 flex-col gap-1 sm:contents">
+                  <div className="flex items-center justify-between gap-3 sm:contents">
+                    <span className="text-sm font-medium text-slate-700 sm:w-20 sm:shrink-0">
+                      {LABELS[platform]}
+                    </span>
+                    <span className="text-sm text-slate-500 tabular-nums sm:order-last sm:w-20 sm:shrink-0 sm:text-right">
+                      {Math.round(pct)}% ({count})
+                    </span>
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className="relative h-2 w-full overflow-hidden rounded-full bg-brand-600/10 sm:w-auto sm:flex-1"
+                  >
+                    <span
+                      className="absolute inset-y-0 left-0 rounded-full bg-brand-600 transition-[width] duration-300 ease-out"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </span>
+                </div>
               </label>
             </li>
           )
