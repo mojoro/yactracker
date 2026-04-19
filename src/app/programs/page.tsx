@@ -496,10 +496,7 @@ export default async function ProgramsPage({
           >
             Clear
           </Link>
-          <span className="ml-auto text-sm text-slate-400">
-            {meta.total_items} result{meta.total_items === 1 ? '' : 's'}
-          </span>
-          <div className="flex items-center overflow-hidden rounded-lg ring-1 ring-slate-200">
+          <div className="ml-auto flex items-center overflow-hidden rounded-lg ring-1 ring-slate-200">
             <Link
               href={viewLink(params, 'card')}
               className={`inline-flex items-center px-2.5 py-2 transition-colors ${
@@ -536,6 +533,10 @@ export default async function ProgramsPage({
           </div>
         </div>
       </form>
+
+      <p className="mt-6 mb-2 text-sm text-slate-500">
+        {meta.total_items} result{meta.total_items === 1 ? '' : 's'}
+      </p>
 
       {programs.length === 0 ? (
         <div className="rounded-xl bg-white p-16 text-center shadow-sm ring-1 ring-slate-900/5">

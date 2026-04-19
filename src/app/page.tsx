@@ -1,9 +1,12 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { Program } from '@/lib/types'
 import { SubscribeForm } from './subscribe/subscribe-form'
 import { ProgramCard } from './components/program-card'
+import { PlatformPoll } from './components/platform-poll'
+import { PLATFORMS, type Platform } from './components/platform-poll-constants'
 
 const PROGRAM_INCLUDE = {
   program_instruments: { include: { instrument: true } },
@@ -72,7 +75,7 @@ async function attachRatingStats(programs: ProgramWithRelations[]): Promise<Prog
 }
 
 export default async function Home() {
-  const [recentRows, categoryRows] = await Promise.all([
+  const [recentRows, categoryRows, platformGroups, cookieStore] = await Promise.all([
     prisma.program.findMany({
       orderBy: { updated_at: 'desc' },
       take: 6,
@@ -82,7 +85,40 @@ export default async function Home() {
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
+    prisma.platformVote.groupBy({
+      by: ['platform'],
+      _count: { _all: true },
+    }),
+    cookies(),
   ])
+
+  const initialCounts: Record<Platform, number> = {
+    facebook: 0,
+    instagram: 0,
+    discord: 0,
+    reddit: 0,
+    other: 0,
+  }
+  for (const row of platformGroups) {
+    if ((PLATFORMS as readonly string[]).includes(row.platform)) {
+      initialCounts[row.platform as Platform] = row._count._all
+    }
+  }
+
+  const votedRaw = cookieStore.get('platform_votes')?.value
+  let initialVoted: Platform[] = []
+  if (votedRaw) {
+    try {
+      const parsed: unknown = JSON.parse(votedRaw)
+      if (Array.isArray(parsed)) {
+        initialVoted = parsed.filter((v): v is Platform =>
+          (PLATFORMS as readonly string[]).includes(v),
+        )
+      }
+    } catch {
+      // malformed cookie — treat as no votes
+    }
+  }
 
   const recent = await attachRatingStats(recentRows)
   const categories = categoryRows
@@ -180,6 +216,9 @@ export default async function Home() {
                 Submit a program
               </Link>
             </div>
+          </div>
+          <div className="mt-8 border-t border-brand-600/10 pt-6">
+            <PlatformPoll initialCounts={initialCounts} initialVoted={initialVoted} />
           </div>
           <div className="mt-8 border-t border-brand-600/10 pt-6">
             <p className="text-sm font-medium text-slate-600">Want to stay in the loop?</p>
