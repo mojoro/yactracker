@@ -225,6 +225,21 @@ model Subscriber {
 }
 
 // ---------------------------------------------------------------------------
+// Platform interest poll (landing-page CTA)
+// ---------------------------------------------------------------------------
+
+model PlatformVote {
+  id         String   @id @default(uuid())
+  platform   String   // facebook | instagram | discord | reddit
+  ip_hash    String
+  created_at DateTime @default(now())
+
+  @@unique([platform, ip_hash])
+  @@index([platform])
+  @@map("platform_vote")
+}
+
+// ---------------------------------------------------------------------------
 // Program edit history (Wikipedia-style versioning)
 // ---------------------------------------------------------------------------
 
