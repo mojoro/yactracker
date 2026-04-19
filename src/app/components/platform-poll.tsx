@@ -1,7 +1,8 @@
 'use client'
 
 import { useOptimistic, useTransition } from 'react'
-import { PLATFORMS, togglePlatformVote, type Platform } from './platform-poll-actions'
+import { PLATFORMS, type Platform } from './platform-poll-constants'
+import { togglePlatformVote } from './platform-poll-actions'
 
 const LABELS: Record<Platform, string> = {
   facebook: 'Facebook',

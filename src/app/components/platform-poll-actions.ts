@@ -4,9 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { extractIp, hashIp } from '@/lib/ip-hash'
 import { prisma } from '@/lib/prisma'
-
-export const PLATFORMS = ['facebook', 'instagram', 'discord', 'reddit'] as const
-export type Platform = (typeof PLATFORMS)[number]
+import { PLATFORMS, type Platform } from './platform-poll-constants'
 
 const COOKIE_NAME = 'platform_votes'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
