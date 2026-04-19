@@ -40,7 +40,12 @@ export async function togglePlatformVote(
 
   const cookieStore = await cookies()
   const raw = cookieStore.get(COOKIE_NAME)?.value
-  const voted: string[] = raw ? JSON.parse(raw) : []
+  let voted: string[] = []
+  try {
+    voted = raw ? JSON.parse(raw) : []
+  } catch {
+    // malformed cookie — treat as no votes
+  }
   const updated = existing
     ? voted.filter((p) => p !== platform)
     : voted.includes(platform)
