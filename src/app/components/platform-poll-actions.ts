@@ -24,18 +24,6 @@ export async function togglePlatformVote(
   const ip = extractIp(headerStore)
   const ip_hash = await hashIp(ip)
 
-  const existing = await prisma.platformVote.findUnique({
-    where: { platform_ip_hash: { platform, ip_hash } },
-  })
-
-  if (existing) {
-    await prisma.platformVote.delete({ where: { id: existing.id } })
-  } else {
-    await prisma.platformVote.create({ data: { platform, ip_hash } })
-  }
-
-  const count = await prisma.platformVote.count({ where: { platform } })
-
   const cookieStore = await cookies()
   const raw = cookieStore.get(COOKIE_NAME)?.value
   let voted: string[] = []
@@ -44,11 +32,21 @@ export async function togglePlatformVote(
   } catch {
     // malformed cookie — treat as no votes
   }
-  const updated = existing
-    ? voted.filter((p) => p !== platform)
-    : voted.includes(platform)
-      ? voted
-      : [...voted, platform]
+  const wasVoted = voted.includes(platform)
+
+  if (wasVoted) {
+    await prisma.platformVote.deleteMany({ where: { platform, ip_hash } })
+  } else {
+    await prisma.platformVote.upsert({
+      where: { platform_ip_hash: { platform, ip_hash } },
+      create: { platform, ip_hash },
+      update: {},
+    })
+  }
+
+  const count = await prisma.platformVote.count({ where: { platform } })
+
+  const updated = wasVoted ? voted.filter((p) => p !== platform) : [...voted, platform]
 
   cookieStore.set(COOKIE_NAME, JSON.stringify(updated), {
     path: '/',
@@ -58,5 +56,5 @@ export async function togglePlatformVote(
 
   revalidatePath('/')
 
-  return { platform, count, voted: !existing }
+  return { platform, count, voted: !wasVoted }
 }
