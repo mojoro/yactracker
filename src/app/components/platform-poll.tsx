@@ -73,7 +73,7 @@ export function PlatformPoll({
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
             <li key={platform}>
-              <label className="-mx-3 flex cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 transition-colors hover:bg-brand-600/5">
+              <label className="-mx-3 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 transition-colors hover:bg-brand-600/5">
                 <input
                   type="checkbox"
                   checked={voted}
