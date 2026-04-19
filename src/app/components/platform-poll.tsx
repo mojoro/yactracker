@@ -53,6 +53,8 @@ export function PlatformPoll({
     })
   }
 
+  const maxCount = Math.max(1, ...Object.values(state.counts))
+
   return (
     <div>
       <h3 className="text-sm font-medium text-slate-600">
@@ -62,32 +64,41 @@ export function PlatformPoll({
         We&apos;re thinking of starting a social space. Vote for any platforms you&apos;d actually
         use — pick as many as you like.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <ul className="mt-4 flex flex-col gap-2">
         {PLATFORMS.map((platform) => {
           const voted = state.voted[platform]
           const count = state.counts[platform]
-          const base =
-            'rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ring-1'
-          const styles = voted
-            ? 'bg-brand-600 text-white ring-brand-600 hover:bg-brand-700'
-            : 'bg-white text-slate-700 ring-slate-900/10 hover:text-brand-600 hover:ring-brand-600/40'
+          const pct = (count / maxCount) * 100
           return (
-            <button
-              key={platform}
-              type="button"
-              onClick={() => handleClick(platform)}
-              disabled={isPending}
-              aria-pressed={voted}
-              aria-label={
-                voted ? `Remove vote for ${LABELS[platform]}` : `Vote for ${LABELS[platform]}`
-              }
-              className={`${base} ${styles}`}
-            >
-              {LABELS[platform]} ({count})
-            </button>
+            <li key={platform}>
+              <label className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 transition-colors hover:bg-brand-600/5">
+                <input
+                  type="checkbox"
+                  checked={voted}
+                  onChange={() => handleClick(platform)}
+                  disabled={isPending}
+                  className="h-4 w-4 shrink-0 cursor-pointer accent-brand-600 disabled:opacity-60"
+                />
+                <span className="w-20 shrink-0 text-sm font-medium text-slate-700">
+                  {LABELS[platform]}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="relative h-2 flex-1 overflow-hidden rounded-full bg-brand-600/10"
+                >
+                  <span
+                    className="absolute inset-y-0 left-0 rounded-full bg-brand-600 transition-[width] duration-300 ease-out"
+                    style={{ width: `${pct}%` }}
+                  />
+                </span>
+                <span className="w-8 shrink-0 text-right text-sm text-slate-600 tabular-nums">
+                  {count}
+                </span>
+              </label>
+            </li>
           )
         })}
-      </div>
+      </ul>
     </div>
   )
 }
